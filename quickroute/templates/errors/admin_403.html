@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Access Denied | QuickRoute Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .error-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .error-code {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: rgba(52, 152, 219, 0.8);
+            border-color: rgba(52, 152, 219, 0.9);
+        }
+
+        .btn-primary:hover {
+            background: rgba(52, 152, 219, 0.9);
+        }
+
+        .admin-logo {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .permission-note {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="admin-logo">🎛️ QuickRoute Admin</div>
+        <div class="error-icon">🔒</div>
+        <div class="error-code">403</div>
+        <div class="error-title">Access Denied</div>
+        <div class="error-message">
+            You don't have permission to access this admin resource.<br>
+            This area is restricted to superusers only.
+        </div>
+
+        <div class="action-buttons">
+            <a href="/admin" class="btn btn-primary">← Back to Admin</a>
+            <a href="/admin/login" class="btn">Login as Different User</a>
+        </div>
+
+        <div class="permission-note">
+            If you believe this is an error, please contact your system administrator.
+        </div>
+    </div>
+</body>
+</html>

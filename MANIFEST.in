@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include quickroute/templates *.html
+recursive-include quickroute/templates/errors *.html
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

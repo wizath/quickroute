@@ -1,0 +1,149 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quickroute"
+version = "0.1.0"
+description = "Async web framework with familiar ORM patterns built with FastAPI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "wizath", email = "wizath@quickroute.dev"}
+]
+keywords = ["fastapi", "sqlalchemy", "async", "api", "admin", "jwt", "websocket", "jobs", "quickroute", "orm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: FastAPI",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "fastapi>=0.95",
+    "uvicorn[standard]>=0.21",
+    "sqlalchemy>=2.0",
+    "aiosqlite>=0.18",
+    "sqladmin>=0.5",
+    "alembic>=1.12",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "itsdangerous>=2.0",
+    "passlib[bcrypt]>=1.7",
+    "pyjwt>=2.8",
+    "python-multipart>=0.0.6",
+    "typer[all]>=0.10",
+    "websockets>=11.0",
+    "jinja2>=3.1",
+    "starlette>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "httpx>=0.24",  # For async HTTP testing
+    "websockets>=11.0",  # For WebSocket testing
+]
+postgres = ["asyncpg>=0.27"]
+mysql = ["aiomysql>=0.1"]
+sqlite = ["aiosqlite>=0.18"]
+celery = [
+    "celery[redis]>=5.3",
+    "redis>=5.0",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "httpx>=0.24",
+    "websockets>=11.0",
+]
+
+[project.urls]
+Homepage = "https://quickroute.dev"
+Documentation = "https://docs.quickroute.dev"
+Repository = "https://github.com/quickroute/quickroute"
+Issues = "https://github.com/quickroute/quickroute/issues"
+
+[project.scripts]
+quickroute = "quickroute.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["quickroute*"]
+
+[tool.setuptools.package-data]
+quickroute = ["templates/*.html", "templates/errors/*.html"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --strict-config --cov=app --cov-report=html --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "websocket: marks tests as websocket tests",
+    "auth: marks tests as authentication tests",
+    "jobs: marks tests as job system tests",
+    "plugins: marks tests as plugin tests",
+    "middleware: marks tests as middleware tests",
+    "celery: marks tests as celery tests",
+    "cli: marks tests as CLI command tests",
+    "database: marks tests as database tests",
+    "api: marks tests as API tests",
+    "security: marks tests as security tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "except ImportError:",
+]
