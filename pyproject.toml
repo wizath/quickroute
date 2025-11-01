@@ -64,6 +64,8 @@ celery = [
     "celery[redis]>=5.3",
     "redis>=5.0",
 ]
+mqtt = ["paho-mqtt>=1.6"]
+influxdb = ["influxdb-client>=1.36"]
 test = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",

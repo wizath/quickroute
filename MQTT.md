@@ -217,6 +217,345 @@ status = mqtt.get_status()
 # }
 ```
 
+## Admin Interface (Mosquitto Dynamic Security)
+
+The MQTT plugin supports a separate admin connection for broker management via Mosquitto's Dynamic Security plugin.
+
+### Configuration
+
+Add admin configuration to `settings.py`:
+
+```python
+# Normal MQTT client
+MQTT_BROKER_HOST = "localhost"
+MQTT_BROKER_PORT = 1883
+MQTT_USERNAME = "user"
+MQTT_PASSWORD = "password"
+
+# Admin interface (optional)
+MQTT_ADMIN_HOST = "localhost"  # Can be same or different broker
+MQTT_ADMIN_PORT = 1884  # Mosquitto dynamic security port
+MQTT_ADMIN_USERNAME = "admin"
+MQTT_ADMIN_PASSWORD = "admin-password"
+```
+
+### Setup Mosquitto Dynamic Security
+
+Enable dynamic security in `mosquitto.conf`:
+
+```conf
+# Dynamic security plugin
+plugin /usr/share/mosquitto/mosquitto_dynamic_security.so
+plugin_opt_config_file /var/lib/mosquitto/dynamic-security.json
+
+# Admin listener
+listener 1884
+allow_anonymous false
+
+# Normal listener
+listener 1883
+```
+
+Initialize dynamic security:
+
+```bash
+mosquitto_ctrl dynsec init /var/lib/mosquitto/dynamic-security.json admin admin-password
+```
+
+### Admin API
+
+Once configured, use `mqtt.admin` for management operations:
+
+```python
+from quickroute.plugins import get_plugin_manager
+
+plugin_manager = get_plugin_manager(settings)
+mqtt = plugin_manager.get("mqtt")
+
+# Check if admin is available
+if mqtt.admin:
+    # User management
+    await mqtt.admin.create_user("newuser", "password")
+    await mqtt.admin.delete_user("olduser")
+    await mqtt.admin.set_password("user", "newpassword")
+    users = await mqtt.admin.list_users()
+
+    # ACL management
+    await mqtt.admin.add_role("sensors_reader")
+    await mqtt.admin.add_acl_to_role("sensors_reader", "sensors/#", "subscribe")
+    await mqtt.admin.assign_role("user", "sensors_reader")
+
+    # Client management
+    await mqtt.admin.enable_client("client_id")
+    await mqtt.admin.disable_client("client_id")
+
+    # Get broker info
+    clients = await mqtt.admin.get_connected_clients()
+    stats = await mqtt.admin.get_broker_stats()
+```
+
+### User Management
+
+#### Create User
+
+```python
+# Create user with password
+await mqtt.admin.create_user("iot_device_001", "secure_password")
+
+# Create user with specific client ID
+await mqtt.admin.create_user(
+    username="iot_device_001",
+    password="secure_password",
+    client_id="device_001"
+)
+```
+
+#### Delete User
+
+```python
+await mqtt.admin.delete_user("old_device")
+```
+
+#### Change Password
+
+```python
+await mqtt.admin.set_password("iot_device_001", "new_password")
+```
+
+#### List Users
+
+```python
+users = await mqtt.admin.list_users()
+# Returns: [{"username": "user1", "roles": ["reader"]}, ...]
+```
+
+### Role & ACL Management
+
+#### Create Role
+
+```python
+# Create a role
+await mqtt.admin.add_role("temperature_sensors")
+```
+
+#### Add ACL to Role
+
+```python
+# Read access to topic
+await mqtt.admin.add_acl_to_role(
+    role="temperature_sensors",
+    topic="sensors/temperature/#",
+    access="subscribe"
+)
+
+# Write access
+await mqtt.admin.add_acl_to_role(
+    role="controllers",
+    topic="devices/+/commands",
+    access="publish"
+)
+
+# Read and write
+await mqtt.admin.add_acl_to_role(
+    role="admin_role",
+    topic="#",
+    access="both"  # publish and subscribe
+)
+```
+
+#### Assign Role to User
+
+```python
+await mqtt.admin.assign_role("iot_device_001", "temperature_sensors")
+
+# Assign multiple roles
+await mqtt.admin.assign_role("admin_user", "admin_role")
+await mqtt.admin.assign_role("admin_user", "temperature_sensors")
+```
+
+#### Remove Role from User
+
+```python
+await mqtt.admin.remove_role("user", "old_role")
+```
+
+### Client Management
+
+#### Get Connected Clients
+
+```python
+clients = await mqtt.admin.get_connected_clients()
+# Returns: [
+#     {"client_id": "device_001", "username": "iot_device_001", "connected_at": "..."},
+#     ...
+# ]
+```
+
+#### Disconnect Client
+
+```python
+# Disconnect client by client ID
+await mqtt.admin.disconnect_client("device_001")
+```
+
+#### Enable/Disable Client
+
+```python
+# Disable client (prevent reconnection)
+await mqtt.admin.disable_client("device_001")
+
+# Re-enable client
+await mqtt.admin.enable_client("device_001")
+```
+
+### Broker Statistics
+
+#### Get Broker Stats
+
+```python
+stats = await mqtt.admin.get_broker_stats()
+# Returns: {
+#     "clients_connected": 15,
+#     "clients_total": 50,
+#     "messages_sent": 1234,
+#     "messages_received": 5678,
+#     "uptime_seconds": 86400
+# }
+```
+
+#### Subscribe to $SYS Topics
+
+For real-time broker monitoring, subscribe to `$SYS/#` topics:
+
+```python
+@mqtt.subscribe("$SYS/broker/clients/connected")
+async def monitor_clients(topic: str, message: str):
+    client_count = int(message)
+    print(f"Connected clients: {client_count}")
+
+@mqtt.subscribe("$SYS/broker/messages/sent")
+async def monitor_messages(topic: str, message: str):
+    msg_count = int(message)
+    print(f"Messages sent: {msg_count}")
+```
+
+### Real-World Example
+
+```python
+from quickroute.plugins import get_plugin_manager
+
+plugin_manager = get_plugin_manager(settings)
+mqtt = plugin_manager.get("mqtt")
+
+async def setup_iot_device(device_id: str, location: str):
+    """Set up new IoT device with proper permissions."""
+
+    if not mqtt.admin:
+        raise RuntimeError("MQTT admin not configured")
+
+    # Create user for device
+    username = f"device_{device_id}"
+    password = generate_secure_password()
+
+    await mqtt.admin.create_user(username, password)
+
+    # Create role for device location
+    role_name = f"sensors_{location}"
+
+    # Check if role exists, create if not
+    roles = await mqtt.admin.list_roles()
+    if role_name not in [r["name"] for r in roles]:
+        await mqtt.admin.add_role(role_name)
+
+        # Add read permission for sensors in location
+        await mqtt.admin.add_acl_to_role(
+            role=role_name,
+            topic=f"sensors/{location}/#",
+            access="publish"
+        )
+
+        # Add write permission for device commands
+        await mqtt.admin.add_acl_to_role(
+            role=role_name,
+            topic=f"devices/{device_id}/commands",
+            access="subscribe"
+        )
+
+    # Assign role to user
+    await mqtt.admin.assign_role(username, role_name)
+
+    return {
+        "username": username,
+        "password": password,
+        "topics": {
+            "publish": f"sensors/{location}/#",
+            "subscribe": f"devices/{device_id}/commands"
+        }
+    }
+
+# Usage
+device_creds = await setup_iot_device("001", "warehouse_a")
+print(f"Device credentials: {device_creds}")
+```
+
+### Admin API vs Normal Client
+
+**Two separate connections:**
+
+```python
+mqtt = plugin_manager.get("mqtt")
+
+# Normal client operations (port 1883)
+await mqtt.publish("sensors/temp", {"value": 23.5})
+await mqtt.subscribe("devices/+/status")
+await mqtt.is_connected()
+
+# Admin operations (port 1884)
+if mqtt.admin:
+    await mqtt.admin.create_user("user", "pass")
+    await mqtt.admin.add_role("reader")
+    clients = await mqtt.admin.get_connected_clients()
+```
+
+**Benefits:**
+- Separate credentials for admin vs normal operations
+- Admin on different port for security
+- Normal client works without admin configured
+- Can point admin to different broker
+
+### Security Best Practices
+
+1. **Use separate admin port**: Don't expose admin on public port
+2. **Strong admin credentials**: Admin has full broker control
+3. **Firewall admin port**: Only allow from trusted IPs
+4. **Use TLS for admin**: Encrypt admin communications
+5. **Audit admin actions**: Log all user/role changes
+6. **Rotate admin password**: Change regularly
+7. **Principle of least privilege**: Give users minimal permissions
+
+### Troubleshooting
+
+#### Admin not available
+
+```python
+mqtt = plugin_manager.get("mqtt")
+if not mqtt.admin:
+    print("Admin not configured - check MQTT_ADMIN_HOST setting")
+```
+
+#### Connection failed
+
+- Verify Mosquitto dynamic security is enabled
+- Check `mosquitto.conf` has correct listener port
+- Verify admin username/password is correct
+- Check firewall allows connection to admin port
+
+#### Permission denied
+
+- Ensure admin user has proper permissions
+- Check `/var/lib/mosquitto/dynamic-security.json`
+- Verify admin user was created with `mosquitto_ctrl dynsec init`
+
 ## MQTT Topics
 
 ### Topic Wildcards
