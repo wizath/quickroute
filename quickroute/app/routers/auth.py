@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,8 +26,7 @@ class RefreshRequest(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_session)
+    form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_session)
 ):
     """Login endpoint - returns access and refresh tokens"""
     logger.info(f"Login attempt for: {form_data.username}")
@@ -48,17 +47,11 @@ async def login(
     refresh = create_refresh_token(user.id)
 
     logger.info(f"Successful login for: {user.email}")
-    return TokenResponse(
-        access_token=access["token"],
-        refresh_token=refresh["token"]
-    )
+    return TokenResponse(access_token=access["token"], refresh_token=refresh["token"])
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(
-    request: RefreshRequest,
-    session: AsyncSession = Depends(get_session)
-):
+async def refresh(request: RefreshRequest, session: AsyncSession = Depends(get_session)):
     """Refresh access token using refresh token"""
     logger.debug("Token refresh attempt")
 
@@ -73,9 +66,7 @@ async def refresh(
         raise TokenError("Invalid token type")
 
     jti = payload.get("jti")
-    result = await session.execute(
-        select(BlacklistedToken).where(BlacklistedToken.jti == jti)
-    )
+    result = await session.execute(select(BlacklistedToken).where(BlacklistedToken.jti == jti))
     if result.scalar_one_or_none():
         logger.warning(f"Attempted to refresh blacklisted token: {jti}")
         raise TokenError("Token has been revoked")
@@ -92,17 +83,11 @@ async def refresh(
     refresh = create_refresh_token(user.id)
 
     logger.debug(f"Token refreshed successfully for user: {user.email}")
-    return TokenResponse(
-        access_token=access["token"],
-        refresh_token=refresh["token"]
-    )
+    return TokenResponse(access_token=access["token"], refresh_token=refresh["token"])
 
 
 @router.post("/logout")
-async def logout(
-    request: RefreshRequest,
-    session: AsyncSession = Depends(get_session)
-):
+async def logout(request: RefreshRequest, session: AsyncSession = Depends(get_session)):
     """Logout - blacklist the refresh token"""
     logger.debug("Logout attempt")
 
@@ -114,11 +99,12 @@ async def logout(
 
     # Blacklist the token
     from datetime import datetime
+
     jti = payload.get("jti")
     blacklisted = BlacklistedToken(
         jti=jti,
         token_type=payload.get("type", "refresh"),
-        expires_at=datetime.fromtimestamp(payload.get("exp"))
+        expires_at=datetime.fromtimestamp(payload.get("exp")),
     )
     session.add(blacklisted)
 

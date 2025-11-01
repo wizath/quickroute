@@ -6,9 +6,7 @@ Provides testing utilities and configuration.
 
 import os
 import asyncio
-import tempfile
-from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -22,7 +20,6 @@ class QuickRouteTestClient:
 
     def __init__(self, app, test_db_url: str = TEST_DATABASE_URL):
         from fastapi.testclient import TestClient
-        from httpx import AsyncClient
 
         self.app = app
         self.test_db_url = test_db_url
@@ -37,6 +34,7 @@ class QuickRouteTestClient:
     async def async_client(self) -> AsyncGenerator:
         """Async test client."""
         from httpx import AsyncClient
+
         async with AsyncClient(app=self.app, base_url="http://test") as client:
             yield client
 
@@ -52,7 +50,6 @@ def event_loop():
 @pytest.fixture(scope="function")
 async def test_db_engine():
     """Create a test database engine."""
-    from sqlalchemy.ext.asyncio import create_async_engine
 
     engine = create_async_engine(
         TEST_DATABASE_URL,
@@ -64,6 +61,7 @@ async def test_db_engine():
     )
 
     from quickroute.app.database import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -76,13 +74,8 @@ async def test_db_engine():
 @pytest.fixture(scope="function")
 async def test_db_session(test_db_engine):
     """Create a test database session."""
-    from sqlalchemy.orm import sessionmaker
 
-    async_session = async_sessionmaker(
-        test_db_engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
+    async_session = async_sessionmaker(test_db_engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
         yield session
@@ -99,12 +92,14 @@ async def test_client(test_db_session):
 
     try:
         from app.main import app
+
         app.dependency_overrides[get_async_session] = override_get_db
         yield app
         app.dependency_overrides.clear()
     except ImportError:
         # For library testing, create a minimal app
         from quickroute import QuickRoute
+
         app = QuickRoute(title="Test App")
         app.dependency_overrides[get_async_session] = override_get_db
         yield app
@@ -121,7 +116,7 @@ async def test_user(test_db_session):
         email="test@example.com",
         hashed_password=get_password_hash("testpass123"),
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
 
     test_db_session.add(user)
@@ -141,7 +136,7 @@ async def test_superuser(test_db_session):
         email="admin@example.com",
         hashed_password=get_password_hash("adminpass123"),
         is_active=True,
-        is_superuser=True
+        is_superuser=True,
     )
 
     test_db_session.add(user)
@@ -182,11 +177,7 @@ class QuickRouteTestCase:
         from quickroute.app.models import User
         from quickroute.app.auth import get_password_hash
 
-        user = User(
-            email=email,
-            hashed_password=get_password_hash(password),
-            **kwargs
-        )
+        user = User(email=email, hashed_password=get_password_hash(password), **kwargs)
 
         self.db.add(user)
         await self.db.commit()
@@ -218,24 +209,12 @@ def pytest_configure(config):
     """Configure pytest with QuickRoute settings."""
     os.environ["QUICKROUTE_TESTING"] = "1"
 
-    config.addinivalue_line(
-        "markers", "unit: Unit tests"
-    )
-    config.addinivalue_line(
-        "markers", "integration: Integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "auth: Authentication tests"
-    )
-    config.addinivalue_line(
-        "markers", "database: Database tests"
-    )
-    config.addinivalue_line(
-        "markers", "api: API tests"
-    )
-    config.addinivalue_line(
-        "markers", "slow: Slow tests"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests")
+    config.addinivalue_line("markers", "integration: Integration tests")
+    config.addinivalue_line("markers", "auth: Authentication tests")
+    config.addinivalue_line("markers", "database: Database tests")
+    config.addinivalue_line("markers", "api: API tests")
+    config.addinivalue_line("markers", "slow: Slow tests")
 
 
 def pytest_collection_modifyitems(config, items):

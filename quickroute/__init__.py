@@ -36,12 +36,14 @@ except ImportError:
 # Feature imports (with graceful fallbacks)
 try:
     from .app.websocket.decorators import websocket, websocket_room
+
     WEBSOCKET_AVAILABLE = True
 except ImportError:
     WEBSOCKET_AVAILABLE = False
 
 try:
     from .app.jobs import periodic
+
     JOBS_AVAILABLE = True
 except ImportError:
     JOBS_AVAILABLE = False
@@ -49,6 +51,7 @@ except ImportError:
 try:
     from .app.plugins.base import BasePlugin
     from .app.plugins.manager import PluginManager
+
     PLUGINS_AVAILABLE = True
 except ImportError:
     PLUGINS_AVAILABLE = False
@@ -64,20 +67,17 @@ __all__ = [
     "User",  # Common model
     "get_async_session",
     "load_middleware",
-
     # Authentication
     "create_access_token",
     "create_refresh_token",
     "decode_token",
     "get_password_hash",
     "verify_password",
-
     # Admin (optional)
     "ADMIN_AVAILABLE",
     "setup_admin",
     "UserAdmin",
     "BlacklistedTokenAdmin",
-
     # Feature availability flags
     "WEBSOCKET_AVAILABLE",
     "JOBS_AVAILABLE",
@@ -104,18 +104,21 @@ try:
         test_user,
         test_superuser,
         access_token,
-        superuser_token
+        superuser_token,
     )
-    __all__.extend([
-        "QuickRouteTestCase",
-        "QuickRouteTestClient",
-        "test_db_engine",
-        "test_db_session",
-        "test_client",
-        "test_user",
-        "test_superuser",
-        "access_token",
-        "superuser_token"
-    ])
+
+    __all__.extend(
+        [
+            "QuickRouteTestCase",
+            "QuickRouteTestClient",
+            "test_db_engine",
+            "test_db_session",
+            "test_client",
+            "test_user",
+            "test_superuser",
+            "access_token",
+            "superuser_token",
+        ]
+    )
 except ImportError:
     pass

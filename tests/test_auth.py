@@ -5,21 +5,11 @@ Tests for QuickRoute authentication system.
 import pytest
 import jwt
 from datetime import datetime, timedelta
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from quickroute.app.auth import (
-    hash_password,
-    verify_password,
-    get_password_hash
-)
-from quickroute.app.jwt_utils import (
-    create_access_token,
-    decode_token,
-    create_refresh_token
-)
+from quickroute.app.auth import hash_password, verify_password, get_password_hash
+from quickroute.app.jwt_utils import create_access_token, decode_token, create_refresh_token
 from quickroute.app.models import User
-from quickroute.app.exceptions import QuickRouteException
 from quickroute.app.settings import settings
 
 
@@ -136,9 +126,11 @@ class TestTokenVerification:
             "sub": "123",
             "type": "access",
             "exp": datetime.utcnow() - timedelta(minutes=1),  # Expired 1 minute ago
-            "iat": datetime.utcnow() - timedelta(minutes=31)
+            "iat": datetime.utcnow() - timedelta(minutes=31),
         }
-        token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        token = jwt.encode(
+            expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+        )
 
         payload = decode_token(token)
         assert payload is None  # Should return None for expired tokens
@@ -165,7 +157,7 @@ class TestTokenVerification:
         token = jwt.encode(
             {"email": "test@example.com", "type": "access"},
             settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM
+            algorithm=settings.JWT_ALGORITHM,
         )
 
         payload = decode_token(token)
@@ -353,9 +345,11 @@ class TestAuthSecurity:
             "sub": "123",
             "type": "access",
             "exp": datetime.utcnow() - timedelta(seconds=10),  # Expired 10 seconds ago
-            "iat": datetime.utcnow() - timedelta(minutes=31)
+            "iat": datetime.utcnow() - timedelta(minutes=31),
         }
-        token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        token = jwt.encode(
+            expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+        )
 
         # Should return None for expired token
         payload = decode_token(token)
@@ -428,7 +422,7 @@ class TestAuthUtilities:
         user = User(
             email="authuser@example.com",
             hashed_password=get_password_hash("password123"),
-            is_active=True
+            is_active=True,
         )
         test_db.add(user)
         await test_db.commit()
@@ -447,7 +441,9 @@ class TestAuthUtilities:
         # This is a placeholder for the actual test
         assert email1.lower() == email2.lower()
 
-    async def test_user_permissions(self, test_db: AsyncSession, test_user: User, test_superuser: User):
+    async def test_user_permissions(
+        self, test_db: AsyncSession, test_user: User, test_superuser: User
+    ):
         """Test user permission checking."""
         # Test regular user
         assert test_user.is_superuser is False

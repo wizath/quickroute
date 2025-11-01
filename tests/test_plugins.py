@@ -9,6 +9,7 @@ from quickroute.app.settings import BaseSettings
 
 class MockSettings(BaseSettings):
     """Mock settings for testing."""
+
     INSTALLED_PLUGINS = []
 
 
@@ -113,15 +114,15 @@ def test_plugin_str_repr(mock_settings):
     """Test plugin string representations."""
     plugin = SimpleTestPlugin(mock_settings)
 
-    assert 'simple_test' in str(plugin)
-    assert '1.0.0' in str(plugin)
-    assert 'not initialized' in str(plugin)
+    assert "simple_test" in str(plugin)
+    assert "1.0.0" in str(plugin)
+    assert "not initialized" in str(plugin)
 
     plugin.initialized = True
-    assert 'initialized' in str(plugin)
+    assert "initialized" in str(plugin)
 
-    assert 'SimpleTestPlugin' in repr(plugin)
-    assert 'simple_test' in repr(plugin)
+    assert "SimpleTestPlugin" in repr(plugin)
+    assert "simple_test" in repr(plugin)
 
 
 def test_plugin_manager_empty(plugin_manager):
@@ -137,8 +138,8 @@ def test_plugin_manager_register(plugin_manager, mock_settings):
     plugin_manager.register(plugin)
 
     assert len(plugin_manager.plugins) == 1
-    assert plugin_manager.get('simple_test') == plugin
-    assert plugin_manager.get_plugin('simple_test') == plugin
+    assert plugin_manager.get("simple_test") == plugin
+    assert plugin_manager.get_plugin("simple_test") == plugin
 
 
 def test_plugin_manager_get_initialized(plugin_manager, mock_settings):
@@ -173,15 +174,15 @@ async def test_plugin_manager_shutdown_async(plugin_manager, mock_settings):
 def test_installed_plugins_loading():
     """Test loading plugins from INSTALLED_PLUGINS setting."""
     settings = MockSettings()
-    settings.INSTALLED_PLUGINS = ['quickroute.plugins.celery']
+    settings.INSTALLED_PLUGINS = ["quickroute.plugins.celery"]
 
     manager = PluginManager(settings)
 
     # Celery plugin should be loaded (but may not be initialized if dependencies unavailable)
-    assert 'celery' in manager.plugins
-    celery_plugin = manager.get('celery')
+    assert "celery" in manager.plugins
+    celery_plugin = manager.get("celery")
     assert celery_plugin is not None
-    assert celery_plugin.name == 'celery'
+    assert celery_plugin.name == "celery"
 
 
 def test_installed_plugins_with_unavailable_dependencies():
@@ -190,7 +191,7 @@ def test_installed_plugins_with_unavailable_dependencies():
     import types
 
     # Create mock plugin module with proper Plugin export
-    mock_module = types.ModuleType('mock_plugins.test_unavailable')
+    mock_module = types.ModuleType("mock_plugins.test_unavailable")
 
     class TestUnavailablePlugin(BasePlugin):
         name = "test_unavailable"
@@ -206,25 +207,25 @@ def test_installed_plugins_with_unavailable_dependencies():
             pass
 
     mock_module.Plugin = TestUnavailablePlugin
-    sys.modules['mock_plugins.test_unavailable'] = mock_module
+    sys.modules["mock_plugins.test_unavailable"] = mock_module
 
     try:
         settings = MockSettings()
-        settings.INSTALLED_PLUGINS = ['mock_plugins.test_unavailable']
+        settings.INSTALLED_PLUGINS = ["mock_plugins.test_unavailable"]
 
         manager = PluginManager(settings)
 
         # Plugin should be registered
-        assert 'test_unavailable' in manager.plugins
+        assert "test_unavailable" in manager.plugins
 
         # But not initialized due to unavailable dependencies
-        plugin = manager.get('test_unavailable')
+        plugin = manager.get("test_unavailable")
         assert plugin.initialized is False
 
     finally:
         # Cleanup
-        if 'mock_plugins.test_unavailable' in sys.modules:
-            del sys.modules['mock_plugins.test_unavailable']
+        if "mock_plugins.test_unavailable" in sys.modules:
+            del sys.modules["mock_plugins.test_unavailable"]
 
 
 def test_plugin_initialization_failure():
@@ -233,7 +234,7 @@ def test_plugin_initialization_failure():
     import types
 
     # Create mock failing plugin module with proper Plugin export
-    mock_module = types.ModuleType('mock_plugins.test_failing')
+    mock_module = types.ModuleType("mock_plugins.test_failing")
 
     class TestFailingPlugin(BasePlugin):
         name = "test_failing"
@@ -249,25 +250,25 @@ def test_plugin_initialization_failure():
             pass
 
     mock_module.Plugin = TestFailingPlugin
-    sys.modules['mock_plugins.test_failing'] = mock_module
+    sys.modules["mock_plugins.test_failing"] = mock_module
 
     try:
         settings = MockSettings()
-        settings.INSTALLED_PLUGINS = ['mock_plugins.test_failing']
+        settings.INSTALLED_PLUGINS = ["mock_plugins.test_failing"]
 
         manager = PluginManager(settings)
 
         # Plugin should be registered
-        assert 'test_failing' in manager.plugins
+        assert "test_failing" in manager.plugins
 
         # But not initialized due to initialization failure
-        plugin = manager.get('test_failing')
+        plugin = manager.get("test_failing")
         assert plugin.initialized is False
 
     finally:
         # Cleanup
-        if 'mock_plugins.test_failing' in sys.modules:
-            del sys.modules['mock_plugins.test_failing']
+        if "mock_plugins.test_failing" in sys.modules:
+            del sys.modules["mock_plugins.test_failing"]
 
 
 def test_plugin_module_without_plugin_export():
@@ -276,12 +277,12 @@ def test_plugin_module_without_plugin_export():
     import types
 
     # Create mock module without Plugin export
-    mock_module = types.ModuleType('mock_plugins.no_export')
-    sys.modules['mock_plugins.no_export'] = mock_module
+    mock_module = types.ModuleType("mock_plugins.no_export")
+    sys.modules["mock_plugins.no_export"] = mock_module
 
     try:
         settings = MockSettings()
-        settings.INSTALLED_PLUGINS = ['mock_plugins.no_export']
+        settings.INSTALLED_PLUGINS = ["mock_plugins.no_export"]
 
         manager = PluginManager(settings)
 
@@ -290,5 +291,5 @@ def test_plugin_module_without_plugin_export():
 
     finally:
         # Cleanup
-        if 'mock_plugins.no_export' in sys.modules:
-            del sys.modules['mock_plugins.no_export']
+        if "mock_plugins.no_export" in sys.modules:
+            del sys.modules["mock_plugins.no_export"]

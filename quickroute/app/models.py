@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from .database import Base
 from .managers import AsyncModelManager
@@ -26,6 +26,7 @@ class QuickRouteModel(Base):
         """Default repr representation."""
         return f"<{self.__class__.__name__}: {self.id}>"
 
+
 class User(QuickRouteModel):
     __tablename__ = "users"
 
@@ -35,7 +36,9 @@ class User(QuickRouteModel):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     objects = AsyncModelManager()
 
@@ -60,11 +63,13 @@ class User(QuickRouteModel):
     def set_password(self, raw_password: str):
         """Set password using method"""
         from .auth import hash_password
+
         self.hashed_password = hash_password(raw_password)
 
     def check_password(self, raw_password: str) -> bool:
         """Check password using method"""
         from .auth import verify_password
+
         return verify_password(raw_password, self.hashed_password)
 
     def get_full_name(self) -> str:
@@ -120,7 +125,9 @@ class BlacklistedToken(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     jti: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     token_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'access' or 'refresh'
-    blacklisted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    blacklisted_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     objects = AsyncModelManager()

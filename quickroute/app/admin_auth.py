@@ -4,14 +4,11 @@ QuickRoute Admin Authentication.
 Integrates SQLAdmin with JWT authentication system.
 """
 
-from typing import Optional
-from fastapi import Request, HTTPException, status
+from fastapi import Request
 from fastapi.responses import RedirectResponse
 from sqladmin import Admin
-from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 import jwt
-from datetime import datetime, timedelta
 
 from .settings import settings
 from .jwt_utils import decode_token
@@ -90,7 +87,7 @@ class AdminAuth:
 
         This is called for each admin request to verify permissions.
         """
-        if hasattr(request.state, 'admin_user') and request.state.admin_user:
+        if hasattr(request.state, "admin_user") and request.state.admin_user:
             return True
 
         return await self.login_admin(request)
@@ -101,10 +98,14 @@ class QuickRouteAdmin(Admin):
     QuickRoute Admin with JWT authentication integration.
     """
 
-    def __init__(self, app, engine,
-                 authentication_url: str = "/admin/login",
-                 logout_url: str = "/admin/logout",
-                 title: str = "QuickRoute Admin"):
+    def __init__(
+        self,
+        app,
+        engine,
+        authentication_url: str = "/admin/login",
+        logout_url: str = "/admin/logout",
+        title: str = "QuickRoute Admin",
+    ):
         super().__init__(app, engine)
 
         self.authentication_url = authentication_url
@@ -124,14 +125,15 @@ class QuickRouteAdmin(Admin):
                 return RedirectResponse(url="/admin", status_code=302)
 
             from fastapi.templating import Jinja2Templates
+
             templates = Jinja2Templates(directory="templates")
             return templates.TemplateResponse(
                 "admin_login.html",
                 {
                     "request": request,
                     "title": "Admin Login - QuickRoute",
-                    "message": "Please login with your admin credentials"
-                }
+                    "message": "Please login with your admin credentials",
+                },
             )
 
         @app.post("/admin/login")
@@ -143,32 +145,36 @@ class QuickRouteAdmin(Admin):
 
             if not email or not password:
                 from fastapi.templating import Jinja2Templates
+
                 templates = Jinja2Templates(directory="templates")
                 return templates.TemplateResponse(
                     "admin_login.html",
                     {
                         "request": request,
                         "title": "Admin Login - QuickRoute",
-                        "error": "Email and password are required"
-                    }
+                        "error": "Email and password are required",
+                    },
                 )
 
             from .dependencies import authenticate_user
+
             user = await authenticate_user(email, password)
 
             if not user or not user.is_active or not user.is_superuser:
                 from fastapi.templating import Jinja2Templates
+
                 templates = Jinja2Templates(directory="templates")
                 return templates.TemplateResponse(
                     "admin_login.html",
                     {
                         "request": request,
                         "title": "Admin Login - QuickRoute",
-                        "error": "Invalid credentials or insufficient permissions"
-                    }
+                        "error": "Invalid credentials or insufficient permissions",
+                    },
                 )
 
             from .jwt_utils import create_access_token, create_refresh_token
+
             access_token_data = create_access_token(user.id)
             refresh_token_data = create_refresh_token(user.id)
 
@@ -180,7 +186,7 @@ class QuickRouteAdmin(Admin):
                 max_age=1800,  # 30 minutes
                 httponly=True,
                 secure=settings.DEBUG is False,
-                samesite="lax"
+                samesite="lax",
             )
 
             response.set_cookie(
@@ -189,7 +195,7 @@ class QuickRouteAdmin(Admin):
                 max_age=30 * 24 * 60 * 60,  # 30 days
                 httponly=True,
                 secure=settings.DEBUG is False,
-                samesite="lax"
+                samesite="lax",
             )
 
             return response
@@ -230,6 +236,7 @@ class AdminJWTCookieMiddleware:
             return
 
         from fastapi import Request
+
         request = Request(scope, receive)
 
         await self.app(scope, receive, send)

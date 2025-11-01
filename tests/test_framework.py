@@ -6,13 +6,13 @@ Provides base test cases and utilities for testing QuickRoute applications.
 
 import pytest
 import asyncio
-from typing import Any, Dict, Optional
-from unittest.mock import Mock, patch
+from typing import Dict
+from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from quickroute.app.main import app
-from quickroute import get_async_session, User, create_access_token
+from quickroute import User, create_access_token
 from quickroute.app.settings import TestingSettings
 
 
@@ -28,15 +28,17 @@ class QuickRouteTestCase:
         self.client = TestClient(app)
         self.settings = TestingSettings()
 
-    def create_user(self, email: str = "test@example.com", password: str = "test123", **kwargs) -> User:
+    def create_user(
+        self, email: str = "test@example.com", password: str = "test123", **kwargs
+    ) -> User:
         """Create a test user synchronously for simple tests."""
         # This is a simplified version for sync tests
         user = Mock(spec=User)
         user.id = 1
         user.email = email
         user.hashed_password = "$2b$12$...hashed..."  # Mock hash
-        user.is_active = kwargs.get('is_active', True)
-        user.is_superuser = kwargs.get('is_superuser', False)
+        user.is_active = kwargs.get("is_active", True)
+        user.is_superuser = kwargs.get("is_superuser", False)
         return user
 
     def get_auth_headers(self, user: User) -> Dict[str, str]:
@@ -74,16 +76,14 @@ class AsyncQuickRouteTestCase:
         self.client = TestClient(app)
         self.settings = TestingSettings()
 
-    async def create_user(self, email: str = "test@example.com", password: str = "test123", **kwargs) -> User:
+    async def create_user(
+        self, email: str = "test@example.com", password: str = "test123", **kwargs
+    ) -> User:
         """Create a test user in the database."""
         from quickroute.app.managers import UserManager
+
         user_manager = UserManager()
-        return await user_manager.create(
-            db=self.db,
-            email=email,
-            password=password,
-            **kwargs
-        )
+        return await user_manager.create(db=self.db, email=email, password=password, **kwargs)
 
     def get_auth_headers(self, user: User) -> Dict[str, str]:
         """Get authentication headers for a user."""
@@ -102,6 +102,7 @@ class AsyncQuickRouteTestCase:
     async def create_multiple_users(self, count: int = 3) -> list[User]:
         """Create multiple test users."""
         from quickroute.app.managers import UserManager
+
         user_manager = UserManager()
         users = []
 
@@ -141,13 +142,14 @@ class WebSocketTestCase(AsyncQuickRouteTestCase):
             connection.authenticated = True
 
         if token:
-            connection.add_metadata('token', token)
+            connection.add_metadata("token", token)
 
         return connection
 
     async def create_mock_room(self, name: str = "test_room"):
         """Create a mock WebSocket room for testing."""
         from quickroute.app.websocket.connection import WebSocketRoom
+
         return WebSocketRoom(name)
 
 
@@ -164,16 +166,11 @@ class JobTestCase(AsyncQuickRouteTestCase):
     async def create_test_job(self, name: str = "test_job"):
         """Create a test job for testing."""
         from quickroute.app.jobs import Job, JobRegistry
-        import asyncio
 
         async def test_job_func():
             return {"status": "completed", "job_name": name}
 
-        job = Job(
-            name=name,
-            func=test_job_func,
-            schedule="hourly"
-        )
+        job = Job(name=name, func=test_job_func, schedule="hourly")
 
         registry = JobRegistry()
         registry.register(job)
@@ -183,6 +180,7 @@ class JobTestCase(AsyncQuickRouteTestCase):
     async def run_job_test(self, job):
         """Run a job and return the result."""
         from quickroute.app.jobs import JobScheduler
+
         scheduler = JobScheduler()
         return await scheduler.run_job_now(job.name)
 
@@ -265,8 +263,6 @@ class IntegrationTestCase(AsyncQuickRouteTestCase):
     async def setup_full_app(self):
         """Set up full application for integration testing."""
         # This would set up all components
-        from quickroute.app.plugins import initialize_plugins
-        from quickroute.app.websocket.middleware import initialize_default_websocket_middleware
 
         # Initialize plugins (might be mocked)
         # Initialize WebSocket middleware
@@ -274,7 +270,9 @@ class IntegrationTestCase(AsyncQuickRouteTestCase):
 
         pass
 
-    async def test_full_request_cycle(self, method: str, path: str, headers: Dict = None, data: Dict = None):
+    async def test_full_request_cycle(
+        self, method: str, path: str, headers: Dict = None, data: Dict = None
+    ):
         """Test a full request cycle through the application."""
         if method.upper() == "GET":
             response = self.client.get(path, headers=headers or {})
@@ -294,12 +292,14 @@ class IntegrationTestCase(AsyncQuickRouteTestCase):
 async def create_test_app():
     """Create a test FastAPI application."""
     from quickroute.app.main import app
+
     return app
 
 
 async def create_test_user(db: AsyncSession, email: str = "test@example.com", **kwargs) -> User:
     """Create a test user."""
     from quickroute.app.managers import UserManager
+
     user_manager = UserManager()
     return await user_manager.create(db=db, email=email, **kwargs)
 
@@ -319,6 +319,7 @@ def assert_dict_subset(subset: Dict, full_dict: Dict):
 async def wait_for_async(condition_func, timeout: float = 5.0, interval: float = 0.1):
     """Wait for an async condition to become true."""
     import time
+
     start_time = time.time()
 
     while time.time() - start_time < timeout:

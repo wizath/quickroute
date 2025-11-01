@@ -13,7 +13,6 @@ import pytest
 import subprocess
 import sys
 import tempfile
-import shutil
 from pathlib import Path
 
 
@@ -25,9 +24,7 @@ class TestCLICommands:
     def test_cli_version(self):
         """Test quickroute version command."""
         result = subprocess.run(
-            [sys.executable, "-m", "quickroute", "version"],
-            capture_output=True,
-            text=True
+            [sys.executable, "-m", "quickroute", "version"], capture_output=True, text=True
         )
 
         assert result.returncode == 0
@@ -36,9 +33,7 @@ class TestCLICommands:
     def test_cli_help(self):
         """Test fastdjango --help."""
         result = subprocess.run(
-            [sys.executable, "-m", "quickroute", "--help"],
-            capture_output=True,
-            text=True
+            [sys.executable, "-m", "quickroute", "--help"], capture_output=True, text=True
         )
 
         assert result.returncode == 0
@@ -49,8 +44,9 @@ class TestCLICommands:
     def test_cli_test_command(self):
         """Test quickroute test command."""
         # Create a simple test file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='_test.py', delete=False) as f:
-            f.write("""
+        with tempfile.NamedTemporaryFile(mode="w", suffix="_test.py", delete=False) as f:
+            f.write(
+                """
 import pytest
 
 def test_simple():
@@ -58,7 +54,8 @@ def test_simple():
 
 def test_another():
     assert True
-""")
+"""
+            )
             test_file = f.name
 
         try:
@@ -66,7 +63,7 @@ def test_another():
                 [sys.executable, "-m", "quickroute", "test", test_file],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             # Test command should run (output may be in stdout or stderr)
@@ -87,7 +84,7 @@ def test_another():
                 cwd=tmpdir,
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             assert result.returncode == 0
@@ -108,8 +105,9 @@ class TestCLITestRunner:
     def test_run_tests_with_markers(self):
         """Test running tests with specific markers."""
         # Create a test file with markers
-        with tempfile.NamedTemporaryFile(mode='w', suffix='_test.py', delete=False) as f:
-            f.write("""
+        with tempfile.NamedTemporaryFile(mode="w", suffix="_test.py", delete=False) as f:
+            f.write(
+                """
 import pytest
 
 @pytest.mark.unit
@@ -119,7 +117,8 @@ def test_unit():
 @pytest.mark.integration
 def test_integration():
     assert True
-""")
+"""
+            )
             test_file = f.name
 
         try:
@@ -128,7 +127,7 @@ def test_integration():
                 [sys.executable, "-m", "quickroute", "test", test_file, "--tag", "unit"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             # Should mention the test running (output may be in stdout or stderr)
@@ -140,11 +139,13 @@ def test_integration():
 
     def test_run_tests_verbose(self):
         """Test running tests with verbose output."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='_test.py', delete=False) as f:
-            f.write("""
+        with tempfile.NamedTemporaryFile(mode="w", suffix="_test.py", delete=False) as f:
+            f.write(
+                """
 def test_verbose():
     assert 1 == 1
-""")
+"""
+            )
             test_file = f.name
 
         try:
@@ -152,7 +153,7 @@ def test_verbose():
                 [sys.executable, "-m", "quickroute", "test", test_file, "-v"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             # Verbose flag should be passed (check both stdout and stderr)
@@ -179,7 +180,7 @@ class TestProjectScaffolding:
                 [sys.executable, "-m", "quickroute", "startproject", project_name],
                 cwd=tmpdir,
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             assert result.returncode == 0

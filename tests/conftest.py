@@ -11,9 +11,8 @@ from sqlalchemy.pool import StaticPool
 
 from quickroute.app.database import Base
 from quickroute.app.main import app
-from quickroute import User, create_access_token, UserManager
+from quickroute import User, create_access_token
 from quickroute.app.models import BlacklistedToken
-from quickroute.app.settings import settings
 from quickroute.app.database import get_async_session
 
 
@@ -87,7 +86,7 @@ async def test_user(test_db: AsyncSession) -> User:
         email="test@example.com",
         hashed_password=get_password_hash("testpassword123"),
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
     test_db.add(user)
     await test_db.commit()
@@ -104,7 +103,7 @@ async def test_superuser(test_db: AsyncSession) -> User:
         email="admin@example.com",
         hashed_password=get_password_hash("adminpassword123"),
         is_active=True,
-        is_superuser=True
+        is_superuser=True,
     )
     test_db.add(user)
     await test_db.commit()
@@ -142,6 +141,7 @@ def superuser_headers(test_superuser_token: str) -> dict:
 async def multiple_users(test_db: AsyncSession) -> list[User]:
     """Create multiple test users."""
     from quickroute.app.auth import get_password_hash
+
     users = []
 
     for i in range(5):
@@ -149,7 +149,7 @@ async def multiple_users(test_db: AsyncSession) -> list[User]:
             email=f"user{i+1}@example.com",
             hashed_password=get_password_hash(f"password{i+1}"),
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
         test_db.add(user)
         users.append(user)
@@ -170,7 +170,7 @@ async def inactive_user(test_db: AsyncSession) -> User:
         email="inactive@example.com",
         hashed_password=get_password_hash("testpassword123"),
         is_active=False,
-        is_superuser=False
+        is_superuser=False,
     )
     test_db.add(user)
     await test_db.commit()
@@ -183,6 +183,7 @@ async def inactive_user(test_db: AsyncSession) -> User:
 async def websocket_test_client():
     """Create a WebSocket test client."""
     from fastapi.testclient import TestClient
+
     return TestClient(app)
 
 
@@ -190,10 +191,9 @@ async def websocket_test_client():
 @pytest.fixture
 def mock_celery():
     """Mock Celery for testing."""
-    import pytest
     from unittest.mock import Mock, patch
 
-    with patch('app.celery.app.celery_app') as mock_app:
+    with patch("app.celery.app.celery_app") as mock_app:
         mock_app.task = lambda name=None, bind=False, **kwargs: lambda func: func
         mock_app.conf = Mock()
         mock_app.conf.broker_url = "memory://"
@@ -240,6 +240,7 @@ def test_plugin():
 def test_settings():
     """Create test settings."""
     from quickroute.app.settings import TestingSettings
+
     return TestingSettings()
 
 
@@ -247,18 +248,20 @@ def test_settings():
 @pytest.fixture
 def create_user_factory(test_db: AsyncSession):
     """Factory function to create users."""
+
     async def _create_user(email: str = None, password: str = None, **kwargs):
         from quickroute.app.auth import get_password_hash
 
         user = User(
             email=email or "test@example.com",
             hashed_password=get_password_hash(password or "testpassword123"),
-            **kwargs
+            **kwargs,
         )
         test_db.add(user)
         await test_db.commit()
         await test_db.refresh(user)
         return user
+
     return _create_user
 
 
@@ -272,7 +275,7 @@ async def blacklisted_token(test_db: AsyncSession) -> BlacklistedToken:
         jti="test-jti-12345",
         token_type="access",
         blacklisted_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(minutes=30)
+        expires_at=datetime.utcnow() + timedelta(minutes=30),
     )
     test_db.add(blacklisted)
     await test_db.commit()
@@ -289,7 +292,7 @@ async def expired_blacklisted_token(test_db: AsyncSession) -> BlacklistedToken:
         jti="expired-jti-67890",
         token_type="access",
         blacklisted_at=datetime.utcnow() - timedelta(days=2),
-        expires_at=datetime.utcnow() - timedelta(days=1)  # Expired yesterday
+        expires_at=datetime.utcnow() - timedelta(days=1),  # Expired yesterday
     )
     test_db.add(expired)
     await test_db.commit()

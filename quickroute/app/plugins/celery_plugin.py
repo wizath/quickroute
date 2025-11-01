@@ -4,7 +4,7 @@ Celery plugin for QuickRoute.
 Provides Celery integration through the plugin system.
 """
 
-from typing import Any, Dict, Optional, Callable, Union
+from typing import Any, Dict, Optional, Callable
 import asyncio
 import inspect
 from .base import BasePlugin
@@ -32,11 +32,10 @@ class CeleryPlugin(BasePlugin):
         """Check if Celery dependencies are available."""
         try:
             import redis
-            from celery import Celery
 
-            broker_url = getattr(self.settings, 'CELERY_BROKER_URL', 'redis://localhost:6379/0')
-            if 'redis://' in broker_url:
-                host, port, db = broker_url.replace('redis://', '').split(':')
+            broker_url = getattr(self.settings, "CELERY_BROKER_URL", "redis://localhost:6379/0")
+            if "redis://" in broker_url:
+                host, port, db = broker_url.replace("redis://", "").split(":")
                 r = redis.Redis(host=host, port=int(port), db=int(db), socket_connect_timeout=2)
                 r.ping()
                 return True
@@ -50,26 +49,30 @@ class CeleryPlugin(BasePlugin):
         try:
             from celery import Celery
 
-            self.celery_app = Celery('fastdjango')
+            self.celery_app = Celery("fastdjango")
 
             self.celery_app.conf.update(
-                broker_url=getattr(self.settings, 'CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-                result_backend=getattr(self.settings, 'CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
-                task_serializer='json',
-                accept_content=['json'],
-                result_serializer='json',
-                timezone='UTC',
+                broker_url=getattr(self.settings, "CELERY_BROKER_URL", "redis://localhost:6379/0"),
+                result_backend=getattr(
+                    self.settings, "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+                ),
+                task_serializer="json",
+                accept_content=["json"],
+                result_serializer="json",
+                timezone="UTC",
                 enable_utc=True,
                 task_default_expires=3600,
                 task_reject_on_worker_lost=True,
                 task_track_started=True,
                 result_expires=3600,
-                worker_prefetch_multiplier=getattr(self.settings, 'CELERY_WORKER_PREFETCH_MULTIPLIER', 1),
-                task_acks_late=getattr(self.settings, 'CELERY_TASK_ACKS_LATE', True),
+                worker_prefetch_multiplier=getattr(
+                    self.settings, "CELERY_WORKER_PREFETCH_MULTIPLIER", 1
+                ),
+                task_acks_late=getattr(self.settings, "CELERY_TASK_ACKS_LATE", True),
             )
 
             # Auto-discover tasks
-            self.celery_app.autodiscover_tasks(['app.celery'])
+            self.celery_app.autodiscover_tasks(["app.celery"])
 
             self.initialized = True
             logger.info("Celery plugin initialized successfully")
@@ -91,17 +94,14 @@ class CeleryPlugin(BasePlugin):
 
         Falls back to synchronous execution if Celery is not available.
         """
+
         def decorator(func: Callable) -> Callable:
             task_name = name or f"app.celery.tasks.{func.__name__}"
 
             self._fallback_registry[task_name] = func
 
             if self.initialized and self.celery_app:
-                task = self.celery_app.task(
-                    name=task_name,
-                    bind=bind,
-                    **kwargs
-                )(func)
+                task = self.celery_app.task(name=task_name, bind=bind, **kwargs)(func)
 
                 task._fallback_func = func
                 self._task_registry[task_name] = task
@@ -116,7 +116,9 @@ class CeleryPlugin(BasePlugin):
                         return func(*args, **kwargs)
 
                 fallback_task.delay = lambda *args, **kwargs: fallback_task(*args, **kwargs)
-                fallback_task.apply_async = lambda args=None, kwargs=None, **opts: fallback_task(*args, **kwargs)
+                fallback_task.apply_async = lambda args=None, kwargs=None, **opts: fallback_task(
+                    *args, **kwargs
+                )
                 fallback_task.name = task_name
                 fallback_task._fallback_func = func
                 fallback_task._plugin = self
@@ -131,8 +133,10 @@ class CeleryPlugin(BasePlugin):
         """
         Decorator for periodic tasks that work with both built-in scheduler and Celery.
         """
+
         def decorator(func: Callable) -> Callable:
             from ..jobs import periodic as periodic_job
+
             periodic_job(schedule, name, **kwargs)(func)
 
             celery_name = name or func.__name__
@@ -144,7 +148,7 @@ class CeleryPlugin(BasePlugin):
 
             logger.info(f"Registered hybrid periodic task: {celery_task_name}")
             logger.info(f"  - Built-in scheduler: {schedule}")
-            logger.info(f"  - Celery Beat: Available if enabled")
+            logger.info("  - Celery Beat: Available if enabled")
 
             return celery_task_func
 
@@ -159,7 +163,7 @@ class CeleryPlugin(BasePlugin):
         """
         if not self.initialized or not self.celery_app:
             # Fallback: execute directly
-            if hasattr(task, '_fallback_func'):
+            if hasattr(task, "_fallback_func"):
                 func = task._fallback_func
                 if inspect.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
@@ -172,7 +176,7 @@ class CeleryPlugin(BasePlugin):
 
         try:
             # If task is already submitted (has .get() method)
-            if hasattr(task, 'get'):
+            if hasattr(task, "get"):
                 # Task is already running, wait for completion
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(None, task.get)
@@ -187,7 +191,7 @@ class CeleryPlugin(BasePlugin):
         except Exception as e:
             logger.error(f"Error executing Celery task: {e}")
             # Fallback to direct execution
-            if hasattr(task, '_fallback_func'):
+            if hasattr(task, "_fallback_func"):
                 func = task._fallback_func
                 if inspect.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
@@ -199,9 +203,9 @@ class CeleryPlugin(BasePlugin):
         """Get status information for a Celery task."""
         if not self.initialized or not self.celery_app:
             return {
-                'celery_available': False,
-                'status': 'fallback_executed',
-                'message': 'Celery not available, using fallback execution'
+                "celery_available": False,
+                "status": "fallback_executed",
+                "message": "Celery not available, using fallback execution",
             }
 
         try:
@@ -209,28 +213,24 @@ class CeleryPlugin(BasePlugin):
 
             if isinstance(task_result, AsyncResult):
                 return {
-                    'celery_available': True,
-                    'task_id': task_result.id,
-                    'status': task_result.status,
-                    'result': task_result.result if task_result.ready() else None,
-                    'traceback': task_result.traceback if task_result.failed() else None,
-                    'date_done': task_result.date_done,
-                    'runtime': task_result.runtime,
+                    "celery_available": True,
+                    "task_id": task_result.id,
+                    "status": task_result.status,
+                    "result": task_result.result if task_result.ready() else None,
+                    "traceback": task_result.traceback if task_result.failed() else None,
+                    "date_done": task_result.date_done,
+                    "runtime": task_result.runtime,
                 }
             else:
                 return {
-                    'celery_available': True,
-                    'status': 'not_submitted',
-                    'message': 'Task not yet submitted to Celery'
+                    "celery_available": True,
+                    "status": "not_submitted",
+                    "message": "Task not yet submitted to Celery",
                 }
 
         except Exception as e:
             logger.error(f"Error getting Celery task status: {e}")
-            return {
-                'celery_available': True,
-                'status': 'error',
-                'error': str(e)
-            }
+            return {"celery_available": True, "status": "error", "error": str(e)}
 
     def get_task(self, name: str) -> Optional[Any]:
         """Get registered task by name."""
@@ -239,11 +239,12 @@ class CeleryPlugin(BasePlugin):
     def list_tasks(self) -> Dict[str, Any]:
         """List all registered tasks."""
         if self.celery_app:
-            return {name: task for name, task in self.celery_app.tasks.items()
-                   if not name.startswith('celery.')}
+            return {
+                name: task
+                for name, task in self.celery_app.tasks.items()
+                if not name.startswith("celery.")
+            }
         return self._task_registry
 
 
-
-import functools
 from functools import wraps

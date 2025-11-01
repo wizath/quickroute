@@ -8,8 +8,8 @@ from .base import BasePlugin, PluginManager, get_plugin_manager
 from .celery_plugin import CeleryPlugin
 
 __all__ = [
-    'BasePlugin',
-    'PluginManager',
-    'get_plugin_manager',
-    'CeleryPlugin',
+    "BasePlugin",
+    "PluginManager",
+    "get_plugin_manager",
+    "CeleryPlugin",
 ]

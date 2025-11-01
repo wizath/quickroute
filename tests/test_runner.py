@@ -16,7 +16,7 @@ def run_command(cmd, description=""):
     print(f"\n{'='*60}")
     print(f"Running: {description}")
     print(f"Command: {' '.join(cmd)}")
-    print('='*60)
+    print("=" * 60)
 
     result = subprocess.run(cmd)
     return result.returncode == 0
@@ -26,34 +26,25 @@ def main():
     parser = argparse.ArgumentParser(description="QuickRoute Test Runner")
     parser.add_argument(
         "test_type",
-        choices=["all", "unit", "integration", "auth", "jobs", "websocket", "plugins", "middleware", "managers", "router"],
-        help="Type of tests to run"
+        choices=[
+            "all",
+            "unit",
+            "integration",
+            "auth",
+            "jobs",
+            "websocket",
+            "plugins",
+            "middleware",
+            "managers",
+            "router",
+        ],
+        help="Type of tests to run",
     )
-    parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="Run with coverage reporting"
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Verbose output"
-    )
-    parser.add_argument(
-        "--parallel",
-        action="store_true",
-        help="Run tests in parallel"
-    )
-    parser.add_argument(
-        "--watch",
-        action="store_true",
-        help="Watch for changes and re-run tests"
-    )
-    parser.add_argument(
-        "--failed-first",
-        action="store_true",
-        help="Run failed tests first"
-    )
+    parser.add_argument("--coverage", action="store_true", help="Run with coverage reporting")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("--parallel", action="store_true", help="Run tests in parallel")
+    parser.add_argument("--watch", action="store_true", help="Watch for changes and re-run tests")
+    parser.add_argument("--failed-first", action="store_true", help="Run failed tests first")
 
     args = parser.parse_args()
 
@@ -108,6 +99,7 @@ def main():
 
     try:
         import os
+
         os.chdir(project_root)
 
         # Run the tests
@@ -116,7 +108,7 @@ def main():
         if success:
             print(f"\n✅ {args.test_type.title()} tests passed!")
             if args.coverage:
-                print(f"📊 Coverage report generated in htmlcov/index.html")
+                print("📊 Coverage report generated in htmlcov/index.html")
         else:
             print(f"\n❌ {args.test_type.title()} tests failed!")
             return 1

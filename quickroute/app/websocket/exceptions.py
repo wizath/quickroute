@@ -5,6 +5,7 @@ WebSocket exceptions for QuickRoute.
 
 class WebSocketException(Exception):
     """Base WebSocket exception."""
+
     pass
 
 
@@ -19,14 +20,17 @@ class WebSocketDisconnect(WebSocketException):
 
 class WebSocketAuthError(WebSocketException):
     """WebSocket authentication error."""
+
     pass
 
 
 class WebSocketRoomError(WebSocketException):
     """WebSocket room management error."""
+
     pass
 
 
 class WebSocketMessageError(WebSocketException):
     """WebSocket message handling error."""
+
     pass

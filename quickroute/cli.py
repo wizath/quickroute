@@ -13,22 +13,32 @@ from typer import Typer
 
 app = Typer(help="QuickRoute - async web framework built with FastAPI")
 
+
 @app.command()
 def runserver(host: str = None, port: int = None):
     """Run Uvicorn development server."""
     try:
         from app.settings import settings
-        host = host or getattr(settings, 'HOST', '127.0.0.1')
-        port = port or getattr(settings, 'PORT', 8000)
+
+        host = host or getattr(settings, "HOST", "127.0.0.1")
+        port = port or getattr(settings, "PORT", 8000)
     except ImportError:
-        host = host or '127.0.0.1'
+        host = host or "127.0.0.1"
         port = port or 8000
 
     cmd = [
-        sys.executable, "-m", "uvicorn", "app.main:app",
-        "--host", host, "--port", str(port), "--reload"
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        host,
+        "--port",
+        str(port),
+        "--reload",
     ]
     subprocess.run(cmd)
+
 
 @app.command()
 def migrate(message: str = "migration"):
@@ -36,8 +46,12 @@ def migrate(message: str = "migration"):
     subprocess.run([sys.executable, "-m", "alembic", "revision", "--autogenerate", "-m", message])
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"])
 
+
 @app.command()
-def createsuperuser(email: str = typer.Option(..., prompt=True), password: str = typer.Option(..., prompt=True, hide_input=True)):
+def createsuperuser(
+    email: str = typer.Option(..., prompt=True),
+    password: str = typer.Option(..., prompt=True, hide_input=True),
+):
     """Create a superuser record."""
     try:
         from app.database import AsyncSessionLocal
@@ -53,7 +67,7 @@ def createsuperuser(email: str = typer.Option(..., prompt=True), password: str =
                     email=email,
                     hashed_password=pwd_ctx.hash(password),
                     is_superuser=True,
-                    is_active=True
+                    is_active=True,
                 )
                 session.add(user)
                 await session.commit()
@@ -64,6 +78,7 @@ def createsuperuser(email: str = typer.Option(..., prompt=True), password: str =
         typer.echo(f"Error: Could not import required modules. {e}")
         typer.echo("Make sure you're in a QuickRoute project directory.")
         sys.exit(1)
+
 
 @app.command()
 def shell():
@@ -82,16 +97,16 @@ def shell():
         sys.exit(1)
 
     shell_globals = {
-        'User': User,
-        'BlacklistedToken': BlacklistedToken,
-        'AsyncSessionLocal': AsyncSessionLocal,
-        'engine': engine,
-        'settings': settings,
-        'select': select,
-        'hash_password': hash_password,
-        'verify_password': verify_password,
-        'asyncio': asyncio,
-        'session': None,  # Will be set in async context
+        "User": User,
+        "BlacklistedToken": BlacklistedToken,
+        "AsyncSessionLocal": AsyncSessionLocal,
+        "engine": engine,
+        "settings": settings,
+        "select": select,
+        "hash_password": hash_password,
+        "verify_password": verify_password,
+        "asyncio": asyncio,
+        "session": None,  # Will be set in async context
     }
 
     async def get_session():
@@ -107,21 +122,19 @@ def shell():
     async def create_user(email, password, **kwargs):
         """Create a new user"""
         async with AsyncSessionLocal() as session:
-            user = User(
-                email=email,
-                hashed_password=hash_password(password),
-                **kwargs
-            )
+            user = User(email=email, hashed_password=hash_password(password), **kwargs)
             session.add(user)
             await session.commit()
             await session.refresh(user)
             return user
 
-    shell_globals.update({
-        'get_session': get_session,
-        'get_user_by_email': get_user_by_email,
-        'create_user': create_user,
-    })
+    shell_globals.update(
+        {
+            "get_session": get_session,
+            "get_user_by_email": get_user_by_email,
+            "create_user": create_user,
+        }
+    )
 
     banner = """
     🚀 QuickRoute Shell
@@ -155,6 +168,7 @@ def shell():
     typer.echo(banner)
     code.interact(banner="", local=shell_globals)
 
+
 @app.command()
 def startproject(name: str):
     """Create a new QuickRoute project."""
@@ -168,7 +182,7 @@ def startproject(name: str):
 
     (project_path / "app").mkdir()
 
-    main_content = '''from quickroute import QuickRoute
+    main_content = """from quickroute import QuickRoute
 
 app = QuickRoute(
     title="{{ name }}",
@@ -182,7 +196,9 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-'''.replace("{{ name }}", name)
+""".replace(
+        "{{ name }}", name
+    )
 
     with open(project_path / "app" / "main.py", "w") as f:
         f.write(main_content)
@@ -218,6 +234,7 @@ JWT_SECRET_KEY=your-jwt-secret-here
     typer.echo("  pip install -r requirements.txt")
     typer.echo("  quickroute runserver")
 
+
 @app.command()
 def test(
     test_path: str = typer.Argument(None, help="Path to test file or directory"),
@@ -225,7 +242,7 @@ def test(
     keepdb: bool = typer.Option(False, "--keep-db", help="Preserve test database"),
     parallel: int = typer.Option(1, "--parallel", "-n", help="Number of parallel processes"),
     pattern: str = typer.Option("test*.py", "--pattern", help="Test file pattern"),
-    tag: str = typer.Option(None, "--tag", help="Run tests with specific tag")
+    tag: str = typer.Option(None, "--tag", help="Run tests with specific tag"),
 ):
     """Run tests using pytest with QuickRoute test configuration."""
     try:
@@ -266,18 +283,22 @@ def test(
         os.environ["QUICKROUTE_TESTING"] = "1"
 
         if os.environ.get("COVERAGE"):
-            cmd.extend([
-                "--cov=app",
-                "--cov-report=html",
-                "--cov-report=term-missing",
-                "--cov-fail-under=80"
-            ])
+            cmd.extend(
+                [
+                    "--cov=app",
+                    "--cov-report=html",
+                    "--cov-report=term-missing",
+                    "--cov-fail-under=80",
+                ]
+            )
 
-        cmd.extend([
-            "--tb=short",  # Short traceback format
-            "--strict-markers",  # Strict marker checking
-            "--disable-warnings",  # Disable warnings during testing
-        ])
+        cmd.extend(
+            [
+                "--tb=short",  # Short traceback format
+                "--strict-markers",  # Strict marker checking
+                "--disable-warnings",  # Disable warnings during testing
+            ]
+        )
 
         typer.echo(f"Running tests with command: {' '.join(cmd)}")
         subprocess.run(cmd)
@@ -289,15 +310,19 @@ def test(
         typer.echo(f"Error running tests: {e}")
         sys.exit(1)
 
+
 @app.command()
 def version():
     """Show QuickRoute version."""
     from . import __version__
+
     typer.echo(f"QuickRoute {__version__}")
+
 
 def main():
     """Entry point for quickroute CLI."""
     app()
+
 
 if __name__ == "__main__":
     main()

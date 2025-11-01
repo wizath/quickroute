@@ -33,6 +33,7 @@ class InfluxDBPlugin(BasePlugin):
         """Check if influxdb-client is installed."""
         try:
             import influxdb_client
+
             return True
         except ImportError:
             logger.debug("influxdb-client not available")
@@ -45,20 +46,16 @@ class InfluxDBPlugin(BasePlugin):
             from influxdb_client.client.write_api import SYNCHRONOUS
 
             # Get configuration
-            self._url = getattr(self.settings, 'INFLUXDB_URL', 'http://localhost:8086')
-            token = getattr(self.settings, 'INFLUXDB_TOKEN')
-            self._org = getattr(self.settings, 'INFLUXDB_ORG')
-            self._bucket = getattr(self.settings, 'INFLUXDB_BUCKET', 'metrics')
-            timeout = getattr(self.settings, 'INFLUXDB_TIMEOUT', 10000)
-            verify_ssl = getattr(self.settings, 'INFLUXDB_VERIFY_SSL', True)
+            self._url = getattr(self.settings, "INFLUXDB_URL", "http://localhost:8086")
+            token = getattr(self.settings, "INFLUXDB_TOKEN")
+            self._org = getattr(self.settings, "INFLUXDB_ORG")
+            self._bucket = getattr(self.settings, "INFLUXDB_BUCKET", "metrics")
+            timeout = getattr(self.settings, "INFLUXDB_TIMEOUT", 10000)
+            verify_ssl = getattr(self.settings, "INFLUXDB_VERIFY_SSL", True)
 
             # Create client
             self.client = InfluxDBClient(
-                url=self._url,
-                token=token,
-                org=self._org,
-                timeout=timeout,
-                verify_ssl=verify_ssl
+                url=self._url, token=token, org=self._org, timeout=timeout, verify_ssl=verify_ssl
             )
 
             # Get API instances
@@ -97,7 +94,7 @@ class InfluxDBPlugin(BasePlugin):
         fields: Dict[str, Any],
         tags: Optional[Dict[str, str]] = None,
         timestamp: Optional[datetime] = None,
-        bucket: Optional[str] = None
+        bucket: Optional[str] = None,
     ) -> bool:
         """
         Write a single data point to InfluxDB.
@@ -146,7 +143,9 @@ class InfluxDBPlugin(BasePlugin):
             logger.error(f"Error writing InfluxDB point: {e}")
             return False
 
-    async def write_points(self, points: List[Dict[str, Any]], bucket: Optional[str] = None) -> bool:
+    async def write_points(
+        self, points: List[Dict[str, Any]], bucket: Optional[str] = None
+    ) -> bool:
         """
         Write multiple data points in batch.
 
@@ -167,20 +166,20 @@ class InfluxDBPlugin(BasePlugin):
             # Convert to Point objects
             influx_points = []
             for point_data in points:
-                point = Point(point_data['measurement'])
+                point = Point(point_data["measurement"])
 
                 # Add fields
-                for field_name, field_value in point_data['fields'].items():
+                for field_name, field_value in point_data["fields"].items():
                     point = point.field(field_name, field_value)
 
                 # Add tags
-                if 'tags' in point_data:
-                    for tag_name, tag_value in point_data['tags'].items():
+                if "tags" in point_data:
+                    for tag_name, tag_value in point_data["tags"].items():
                         point = point.tag(tag_name, str(tag_value))
 
                 # Add timestamp
-                if 'timestamp' in point_data:
-                    point = point.time(point_data['timestamp'])
+                if "timestamp" in point_data:
+                    point = point.time(point_data["timestamp"])
 
                 influx_points.append(point)
 
@@ -231,7 +230,7 @@ class InfluxDBPlugin(BasePlugin):
         stop: str = "now()",
         filters: Optional[Dict[str, str]] = None,
         fields: Optional[List[str]] = None,
-        bucket: Optional[str] = None
+        bucket: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Simple time range query helper.
@@ -251,7 +250,7 @@ class InfluxDBPlugin(BasePlugin):
 
         # Build Flux query
         query = f'from(bucket: "{bucket_name}")\n'
-        query += f'  |> range(start: {start}, stop: {stop})\n'
+        query += f"  |> range(start: {start}, stop: {stop})\n"
         query += f'  |> filter(fn: (r) => r._measurement == "{measurement}")\n'
 
         # Add tag filters
@@ -261,17 +260,13 @@ class InfluxDBPlugin(BasePlugin):
 
         # Add field filters
         if fields:
-            field_conditions = ' or '.join([f'r._field == "{f}"' for f in fields])
-            query += f'  |> filter(fn: (r) => {field_conditions})\n'
+            field_conditions = " or ".join([f'r._field == "{f}"' for f in fields])
+            query += f"  |> filter(fn: (r) => {field_conditions})\n"
 
         return await self.query(query)
 
     async def delete_measurement(
-        self,
-        measurement: str,
-        start: str,
-        stop: str,
-        bucket: Optional[str] = None
+        self, measurement: str, start: str, stop: str, bucket: Optional[str] = None
     ) -> bool:
         """
         Delete data for a measurement within time range.
@@ -354,9 +349,7 @@ class InfluxDBPlugin(BasePlugin):
 
             # Create bucket
             buckets_api.create_bucket(
-                bucket_name=bucket,
-                org=self._org,
-                retention_rules=retention_rules
+                bucket_name=bucket, org=self._org, retention_rules=retention_rules
             )
 
             logger.info(f"InfluxDB bucket created: {bucket}")

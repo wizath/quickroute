@@ -2,7 +2,7 @@
 Base plugin system for QuickRoute.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 import importlib
 import asyncio
 from ..logging import logger
@@ -64,7 +64,7 @@ class PluginManager:
 
     def _load_installed_plugins(self):
         """Load plugins from INSTALLED_PLUGINS setting."""
-        installed = getattr(self.settings, 'INSTALLED_PLUGINS', [])
+        installed = getattr(self.settings, "INSTALLED_PLUGINS", [])
 
         if not installed:
             logger.info("No plugins configured in INSTALLED_PLUGINS")
@@ -78,7 +78,7 @@ class PluginManager:
                 module = importlib.import_module(plugin_path)
 
                 # Get Plugin class (convention)
-                if not hasattr(module, 'Plugin'):
+                if not hasattr(module, "Plugin"):
                     logger.error(f"Module {plugin_path} does not export 'Plugin' class")
                     continue
 

@@ -24,11 +24,7 @@ class MQTTAdmin:
     async def create_user(self, username: str, password: str, client_id: str = None) -> bool:
         """Create a new MQTT user."""
         command = {
-            "commands": [{
-                "command": "createClient",
-                "username": username,
-                "password": password
-            }]
+            "commands": [{"command": "createClient", "username": username, "password": password}]
         }
         if client_id:
             command["commands"][0]["clientid"] = client_id
@@ -37,43 +33,27 @@ class MQTTAdmin:
 
     async def delete_user(self, username: str) -> bool:
         """Delete an MQTT user."""
-        command = {
-            "commands": [{
-                "command": "deleteClient",
-                "username": username
-            }]
-        }
+        command = {"commands": [{"command": "deleteClient", "username": username}]}
         return await self._send_command(command)
 
     async def set_password(self, username: str, password: str) -> bool:
         """Change user password."""
         command = {
-            "commands": [{
-                "command": "setClientPassword",
-                "username": username,
-                "password": password
-            }]
+            "commands": [
+                {"command": "setClientPassword", "username": username, "password": password}
+            ]
         }
         return await self._send_command(command)
 
     async def list_users(self) -> List[dict]:
         """List all users."""
-        command = {
-            "commands": [{
-                "command": "listClients"
-            }]
-        }
+        command = {"commands": [{"command": "listClients"}]}
         result = await self._send_command(command)
         return result.get("clients", []) if isinstance(result, dict) else []
 
     async def add_role(self, role_name: str) -> bool:
         """Create a new role."""
-        command = {
-            "commands": [{
-                "command": "createRole",
-                "rolename": role_name
-            }]
-        }
+        command = {"commands": [{"command": "createRole", "rolename": role_name}]}
         return await self._send_command(command)
 
     async def add_acl_to_role(self, role: str, topic: str, access: str) -> bool:
@@ -88,28 +68,32 @@ class MQTTAdmin:
         acl_type = {
             "publish": "publishClientSend",
             "subscribe": "subscribeLiteral",
-            "both": "publishClientSend"  # Will add both
+            "both": "publishClientSend",  # Will add both
         }
 
         commands = []
 
         if access in ["publish", "both"]:
-            commands.append({
-                "command": "addRoleACL",
-                "rolename": role,
-                "acltype": "publishClientSend",
-                "topic": topic,
-                "allow": True
-            })
+            commands.append(
+                {
+                    "command": "addRoleACL",
+                    "rolename": role,
+                    "acltype": "publishClientSend",
+                    "topic": topic,
+                    "allow": True,
+                }
+            )
 
         if access in ["subscribe", "both"]:
-            commands.append({
-                "command": "addRoleACL",
-                "rolename": role,
-                "acltype": "subscribeLiteral",
-                "topic": topic,
-                "allow": True
-            })
+            commands.append(
+                {
+                    "command": "addRoleACL",
+                    "rolename": role,
+                    "acltype": "subscribeLiteral",
+                    "topic": topic,
+                    "allow": True,
+                }
+            )
 
         for cmd in commands:
             result = await self._send_command({"commands": [cmd]})
@@ -121,32 +105,20 @@ class MQTTAdmin:
     async def assign_role(self, username: str, role: str) -> bool:
         """Assign role to user."""
         command = {
-            "commands": [{
-                "command": "addClientRole",
-                "username": username,
-                "rolename": role
-            }]
+            "commands": [{"command": "addClientRole", "username": username, "rolename": role}]
         }
         return await self._send_command(command)
 
     async def remove_role(self, username: str, role: str) -> bool:
         """Remove role from user."""
         command = {
-            "commands": [{
-                "command": "removeClientRole",
-                "username": username,
-                "rolename": role
-            }]
+            "commands": [{"command": "removeClientRole", "username": username, "rolename": role}]
         }
         return await self._send_command(command)
 
     async def list_roles(self) -> List[dict]:
         """List all roles."""
-        command = {
-            "commands": [{
-                "command": "listRoles"
-            }]
-        }
+        command = {"commands": [{"command": "listRoles"}]}
         result = await self._send_command(command)
         return result.get("roles", []) if isinstance(result, dict) else []
 
@@ -158,32 +130,17 @@ class MQTTAdmin:
 
     async def disconnect_client(self, client_id: str) -> bool:
         """Disconnect a client."""
-        command = {
-            "commands": [{
-                "command": "kickClient",
-                "clientid": client_id
-            }]
-        }
+        command = {"commands": [{"command": "kickClient", "clientid": client_id}]}
         return await self._send_command(command)
 
     async def enable_client(self, username: str) -> bool:
         """Enable a client."""
-        command = {
-            "commands": [{
-                "command": "enableClient",
-                "username": username
-            }]
-        }
+        command = {"commands": [{"command": "enableClient", "username": username}]}
         return await self._send_command(command)
 
     async def disable_client(self, username: str) -> bool:
         """Disable a client."""
-        command = {
-            "commands": [{
-                "command": "disableClient",
-                "username": username
-            }]
-        }
+        command = {"commands": [{"command": "disableClient", "username": username}]}
         return await self._send_command(command)
 
     async def get_broker_stats(self) -> Dict[str, Any]:
@@ -193,7 +150,6 @@ class MQTTAdmin:
 
     async def _send_command(self, command: dict) -> Any:
         """Send command to dynamic security plugin."""
-        import paho.mqtt.client as mqtt
 
         # Publish to $CONTROL/dynamic-security/v1
         topic = "$CONTROL/dynamic-security/v1"
@@ -246,6 +202,7 @@ class MQTTPlugin(BasePlugin):
         """Check if paho-mqtt is installed."""
         try:
             import paho.mqtt.client as mqtt
+
             return True
         except ImportError:
             logger.debug("paho-mqtt not available")
@@ -257,13 +214,16 @@ class MQTTPlugin(BasePlugin):
             import paho.mqtt.client as mqtt
 
             # Get configuration
-            broker_host = getattr(self.settings, 'MQTT_BROKER_HOST', 'localhost')
-            broker_port = getattr(self.settings, 'MQTT_BROKER_PORT', 1883)
-            client_id = getattr(self.settings, 'MQTT_CLIENT_ID', None) or f"quickroute-{uuid.uuid4().hex[:8]}"
-            username = getattr(self.settings, 'MQTT_USERNAME', None)
-            password = getattr(self.settings, 'MQTT_PASSWORD', None)
-            keepalive = getattr(self.settings, 'MQTT_KEEPALIVE', 60)
-            clean_session = getattr(self.settings, 'MQTT_CLEAN_SESSION', True)
+            broker_host = getattr(self.settings, "MQTT_BROKER_HOST", "localhost")
+            broker_port = getattr(self.settings, "MQTT_BROKER_PORT", 1883)
+            client_id = (
+                getattr(self.settings, "MQTT_CLIENT_ID", None)
+                or f"quickroute-{uuid.uuid4().hex[:8]}"
+            )
+            username = getattr(self.settings, "MQTT_USERNAME", None)
+            password = getattr(self.settings, "MQTT_PASSWORD", None)
+            keepalive = getattr(self.settings, "MQTT_KEEPALIVE", 60)
+            clean_session = getattr(self.settings, "MQTT_CLEAN_SESSION", True)
 
             # Create normal client
             self.client = mqtt.Client(client_id=client_id, clean_session=clean_session)
@@ -289,7 +249,7 @@ class MQTTPlugin(BasePlugin):
             logger.info(f"MQTT client initialized: {client_id} -> {broker_host}:{broker_port}")
 
             # Initialize admin client if configured
-            admin_host = getattr(self.settings, 'MQTT_ADMIN_HOST', None)
+            admin_host = getattr(self.settings, "MQTT_ADMIN_HOST", None)
             if admin_host:
                 self._init_admin_client()
 
@@ -304,10 +264,10 @@ class MQTTPlugin(BasePlugin):
         try:
             import paho.mqtt.client as mqtt
 
-            admin_host = getattr(self.settings, 'MQTT_ADMIN_HOST')
-            admin_port = getattr(self.settings, 'MQTT_ADMIN_PORT', 1884)
-            admin_username = getattr(self.settings, 'MQTT_ADMIN_USERNAME', None)
-            admin_password = getattr(self.settings, 'MQTT_ADMIN_PASSWORD', None)
+            admin_host = getattr(self.settings, "MQTT_ADMIN_HOST")
+            admin_port = getattr(self.settings, "MQTT_ADMIN_PORT", 1884)
+            admin_username = getattr(self.settings, "MQTT_ADMIN_USERNAME", None)
+            admin_password = getattr(self.settings, "MQTT_ADMIN_PASSWORD", None)
             client_id = f"quickroute-admin-{uuid.uuid4().hex[:8]}"
 
             # Create admin client
@@ -325,7 +285,7 @@ class MQTTPlugin(BasePlugin):
             def on_message(client, userdata, msg):
                 # Handle admin responses
                 try:
-                    response = json.loads(msg.payload.decode('utf-8'))
+                    response = json.loads(msg.payload.decode("utf-8"))
                     # Process response
                 except Exception as e:
                     logger.error(f"Error processing admin response: {e}")
@@ -372,7 +332,7 @@ class MQTTPlugin(BasePlugin):
 
             # Re-subscribe to all topics
             for topic in self._subscriptions.keys():
-                qos = getattr(self.settings, 'MQTT_QOS', 1)
+                qos = getattr(self.settings, "MQTT_QOS", 1)
                 client.subscribe(topic, qos)
                 logger.info(f"MQTT subscribed to: {topic}")
         else:
@@ -397,10 +357,10 @@ class MQTTPlugin(BasePlugin):
 
         # Try to decode as JSON
         try:
-            message = json.loads(payload.decode('utf-8'))
+            message = json.loads(payload.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError):
             try:
-                message = payload.decode('utf-8')
+                message = payload.decode("utf-8")
             except UnicodeDecodeError:
                 message = payload
 
@@ -419,7 +379,9 @@ class MQTTPlugin(BasePlugin):
             except Exception as e:
                 logger.error(f"Error in MQTT callback for {topic}: {e}")
 
-    async def publish(self, topic: str, message: Any, qos: Optional[int] = None, retain: bool = False) -> bool:
+    async def publish(
+        self, topic: str, message: Any, qos: Optional[int] = None, retain: bool = False
+    ) -> bool:
         """
         Publish message to topic.
 
@@ -452,7 +414,7 @@ class MQTTPlugin(BasePlugin):
 
             # Get QoS
             if qos is None:
-                qos = getattr(self.settings, 'MQTT_QOS', 1)
+                qos = getattr(self.settings, "MQTT_QOS", 1)
 
             # Publish
             result = self.client.publish(topic, payload, qos=qos, retain=retain)
@@ -481,6 +443,7 @@ class MQTTPlugin(BasePlugin):
             topic: MQTT topic pattern (supports wildcards +, #)
             qos: Quality of Service level
         """
+
         def decorator(func: Callable) -> Callable:
             # Add to subscription registry
             if topic not in self._subscriptions:
@@ -490,7 +453,7 @@ class MQTTPlugin(BasePlugin):
 
             # Subscribe if already connected
             if self._connected and self.client:
-                qos_level = qos if qos is not None else getattr(self.settings, 'MQTT_QOS', 1)
+                qos_level = qos if qos is not None else getattr(self.settings, "MQTT_QOS", 1)
                 self.client.subscribe(topic, qos_level)
                 logger.info(f"MQTT subscribed to: {topic}")
 

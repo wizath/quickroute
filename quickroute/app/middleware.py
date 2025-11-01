@@ -85,7 +85,7 @@ class RequestIDMiddleware(MiddlewareMixin):
         return None
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if hasattr(request.state, 'request_id'):
+        if hasattr(request.state, "request_id"):
             response.headers["X-Request-ID"] = request.state.request_id
         return response
 
@@ -100,7 +100,7 @@ class TimingMiddleware(MiddlewareMixin):
         return None
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if hasattr(request.state, 'start_time'):
+        if hasattr(request.state, "start_time"):
             processing_time = time.time() - request.state.start_time
             response.headers["X-Processing-Time"] = f"{processing_time:.3f}s"
             logger.info(f"Request {request.method} {request.url.path} - {processing_time:.3f}s")
@@ -131,21 +131,21 @@ class LoggingMiddleware(MiddlewareMixin):
 
     async def process_request(self, request: Request) -> Optional[Response]:
         request.state.log_data = {
-            'method': request.method,
-            'url': str(request.url),
-            'path': request.url.path,
-            'query_params': dict(request.query_params),
-            'client_ip': self._get_client_ip(request),
-            'user_agent': request.headers.get('user-agent', ''),
+            "method": request.method,
+            "url": str(request.url),
+            "path": request.url.path,
+            "query_params": dict(request.query_params),
+            "client_ip": self._get_client_ip(request),
+            "user_agent": request.headers.get("user-agent", ""),
         }
 
         logger.info(f"Request started: {request.method} {request.url.path}")
         return None
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if hasattr(request.state, 'log_data'):
+        if hasattr(request.state, "log_data"):
             log_data = request.state.log_data
-            log_data['status_code'] = response.status_code
+            log_data["status_code"] = response.status_code
 
             logger.info(
                 f"Request completed: {log_data['method']} {log_data['path']} "
@@ -165,7 +165,7 @@ class LoggingMiddleware(MiddlewareMixin):
             return real_ip
 
         # Fallback to client IP
-        if hasattr(request, 'client') and request.client:
+        if hasattr(request, "client") and request.client:
             return request.client.host
 
         return "unknown"
@@ -196,7 +196,7 @@ class SessionMiddleware(MiddlewareMixin):
         return None
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if hasattr(request.state, 'session_modified') and request.state.session_modified:
+        if hasattr(request.state, "session_modified") and request.state.session_modified:
             # Save session
             self.sessions[request.state.session_id] = request.state.session
 
@@ -219,32 +219,32 @@ class CSRFMiddleware(MiddlewareMixin):
 
     async def process_request(self, request: Request) -> Optional[Response]:
         # Skip CSRF for safe methods
-        if request.method in ['GET', 'HEAD', 'OPTIONS', 'TRACE']:
+        if request.method in ["GET", "HEAD", "OPTIONS", "TRACE"]:
             return None
 
-        if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+        if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
             csrf_token = request.headers.get("X-CSRFToken")
-            session_token = getattr(request.state, 'session', {}).get('csrf_token')
+            session_token = getattr(request.state, "session", {}).get("csrf_token")
 
             if not csrf_token or not session_token or csrf_token != session_token:
                 return JSONResponse(
-                    status_code=403,
-                    content={"error": "CSRF token missing or invalid"}
+                    status_code=403, content={"error": "CSRF token missing or invalid"}
                 )
 
         return None
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if request.method in ['GET', 'HEAD']:
-            if not hasattr(request.state, 'session'):
+        if request.method in ["GET", "HEAD"]:
+            if not hasattr(request.state, "session"):
                 request.state.session = {}
 
-            if 'csrf_token' not in request.state.session:
+            if "csrf_token" not in request.state.session:
                 import secrets
-                request.state.session['csrf_token'] = secrets.token_urlsafe(32)
+
+                request.state.session["csrf_token"] = secrets.token_urlsafe(32)
                 request.state.session_modified = True
 
-            response.headers["X-CSRFToken"] = request.state.session['csrf_token']
+            response.headers["X-CSRFToken"] = request.state.session["csrf_token"]
 
         return response
 
@@ -255,8 +255,8 @@ class UserMiddleware(MiddlewareMixin):
     """
 
     async def process_request(self, request: Request) -> Optional[Response]:
-        if hasattr(request.state, 'session'):
-            user_id = request.state.session.get('user_id')
+        if hasattr(request.state, "session"):
+            user_id = request.state.session.get("user_id")
             if user_id:
                 from .models import User
                 from .database import AsyncSessionLocal
@@ -282,13 +282,15 @@ class UserMiddleware(MiddlewareMixin):
                 from sqlalchemy import select
 
                 async with AsyncSessionLocal() as session:
-                    result = await session.execute(select(User).where(User.id == int(payload.get("sub"))))
+                    result = await session.execute(
+                        select(User).where(User.id == int(payload.get("sub")))
+                    )
                     user = result.scalar_one_or_none()
                     if user and user.is_active:
                         request.state.user = user
                         request.state.authenticated = True
 
-        if not hasattr(request.state, 'user'):
+        if not hasattr(request.state, "user"):
             request.state.user = None
             request.state.authenticated = False
 
@@ -372,24 +374,24 @@ def load_middleware(app, middleware_classes: Optional[List[str]] = None):
 
     # Map middleware class names to factory functions
     middleware_map = {
-        'app.middleware.RequestIDMiddleware': create_request_id_middleware,
-        'app.middleware.TimingMiddleware': create_timing_middleware,
-        'app.middleware.SecurityHeadersMiddleware': create_security_headers_middleware,
-        'app.middleware.LoggingMiddleware': create_logging_middleware,
-        'app.middleware.SessionMiddleware': create_session_middleware,
-        'app.middleware.CSRFMiddleware': create_csrf_middleware,
-        'app.middleware.UserMiddleware': create_user_middleware,
+        "app.middleware.RequestIDMiddleware": create_request_id_middleware,
+        "app.middleware.TimingMiddleware": create_timing_middleware,
+        "app.middleware.SecurityHeadersMiddleware": create_security_headers_middleware,
+        "app.middleware.LoggingMiddleware": create_logging_middleware,
+        "app.middleware.SessionMiddleware": create_session_middleware,
+        "app.middleware.CSRFMiddleware": create_csrf_middleware,
+        "app.middleware.UserMiddleware": create_user_middleware,
     }
 
     for middleware_path in middleware_classes:
         if middleware_path in middleware_map:
             middleware_map[middleware_path](app)
             logger.info(f"Loaded middleware: {middleware_path}")
-        elif middleware_path == 'starlette.middleware.cors.CORSMiddleware':
+        elif middleware_path == "starlette.middleware.cors.CORSMiddleware":
             add_cors_middleware(app)
-        elif middleware_path == 'starlette.middleware.trustedhost.TrustedHostMiddleware':
+        elif middleware_path == "starlette.middleware.trustedhost.TrustedHostMiddleware":
             add_trusted_host_middleware(app)
-        elif middleware_path == 'starlette.middleware.httpsredirect.HTTPSRedirectMiddleware':
+        elif middleware_path == "starlette.middleware.httpsredirect.HTTPSRedirectMiddleware":
             add_https_redirect_middleware(app)
         else:
             logger.warning(f"Unknown middleware: {middleware_path}")

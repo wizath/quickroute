@@ -9,13 +9,13 @@ from .connection import WebSocketManager, get_websocket_manager, WebSocketConnec
 from .exceptions import WebSocketException, WebSocketDisconnect
 
 __all__ = [
-    'websocket',
-    'websocket_room',
-    'websocket_auth',
-    'WebSocketManager',
-    'get_websocket_manager',
-    'WebSocketConnection',
-    'WebSocketRoom',
-    'WebSocketException',
-    'WebSocketDisconnect',
+    "websocket",
+    "websocket_room",
+    "websocket_auth",
+    "WebSocketManager",
+    "get_websocket_manager",
+    "WebSocketConnection",
+    "WebSocketRoom",
+    "WebSocketException",
+    "WebSocketDisconnect",
 ]

@@ -3,24 +3,25 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from .database import engine
 from .admin import setup_admin
-from .routers import users, auth
 from .settings import settings
 from .exceptions import QuickRouteException
 from .error_handlers import (
     quickroute_exception_handler,
-    http_exception_handler,
     validation_exception_handler,
     sqlalchemy_exception_handler,
-    general_exception_handler
+    general_exception_handler,
 )
 from .logging import logger
 from .middleware import load_middleware
 from .router import Router
-from .routers import auth, users
 from .example_jobs import *  # Import all example jobs to register them
 from .plugins import get_plugin_manager
 
-app = FastAPI(title=settings.QUICKROUTE_TITLE, description=settings.QUICKROUTE_DESCRIPTION, version=settings.QUICKROUTE_VERSION)
+app = FastAPI(
+    title=settings.QUICKROUTE_TITLE,
+    description=settings.QUICKROUTE_DESCRIPTION,
+    version=settings.QUICKROUTE_VERSION,
+)
 
 plugin_manager = get_plugin_manager(settings)
 logger.info(f"Initialized {len(plugin_manager.get_initialized_plugins())} plugins")
@@ -42,22 +43,29 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 app_router = Router()
 
+
 # Basic routes
 @app_router.get("/")
 async def root(request: Request):
     """Health check endpoint with middleware demonstration"""
     return {
         "ok": True,
-        "request_id": getattr(request.state, 'request_id', None),
-        "authenticated": getattr(request.state, 'authenticated', False),
-        "user_id": getattr(request.state.user, 'id', None) if getattr(request.state, 'user', None) else None,
-        "session_data": dict(getattr(request.state, 'session', {})),
+        "request_id": getattr(request.state, "request_id", None),
+        "authenticated": getattr(request.state, "authenticated", False),
+        "user_id": (
+            getattr(request.state.user, "id", None)
+            if getattr(request.state, "user", None)
+            else None
+        ),
+        "session_data": dict(getattr(request.state, "session", {})),
     }
+
 
 @app_router.get("/home/")
 async def home(request: Request):
     """Home page."""
     return {"message": "Welcome to QuickRoute!", "framework": "QuickRoute"}
+
 
 @app_router.get("/about/")
 async def about(request: Request):
@@ -70,9 +78,10 @@ async def about(request: Request):
             "Interactive shell",
             "Settings pattern",
             "Middleware system",
-            "Simple routing"
-        ]
+            "Simple routing",
+        ],
     }
+
 
 @app_router.get("/contact/")
 async def contact(request: Request):
@@ -81,8 +90,9 @@ async def contact(request: Request):
         "title": "Contact Us",
         "email": "contact@quickroute.dev",
         "phone": "+1-555-0123",
-        "address": "123 API Street, Web Framework City"
+        "address": "123 API Street, Web Framework City",
     }
+
 
 @app_router.get("/middleware-info")
 async def middleware_info(request: Request):
@@ -97,41 +107,48 @@ async def middleware_info(request: Request):
             "client_ip": request.client.host if request.client else "unknown",
         },
         "state_info": {
-            "request_id": getattr(request.state, 'request_id', None),
-            "authenticated": getattr(request.state, 'authenticated', False),
-            "user_id": getattr(request.state.user, 'id', None) if getattr(request.state, 'user', None) else None,
-            "session_id": getattr(request.state, 'session_id', None),
-            "session_keys": list(getattr(request.state, 'session', {}).keys()),
+            "request_id": getattr(request.state, "request_id", None),
+            "authenticated": getattr(request.state, "authenticated", False),
+            "user_id": (
+                getattr(request.state.user, "id", None)
+                if getattr(request.state, "user", None)
+                else None
+            ),
+            "session_id": getattr(request.state, "session_id", None),
+            "session_keys": list(getattr(request.state, "session", {}).keys()),
         },
         "security_headers": {
             "csrf_token": headers.get("x-csrftoken"),
             "request_id": headers.get("x-request-id"),
             "processing_time": headers.get("x-processing-time"),
-        }
+        },
     }
+
 
 @app_router.post("/session-test")
 async def session_test(request: Request):
     """Test session functionality"""
-    if not hasattr(request.state, 'session'):
+    if not hasattr(request.state, "session"):
         request.state.session = {}
 
     # Increment counter in session
-    counter = request.state.session.get('counter', 0) + 1
-    request.state.session['counter'] = counter
-    request.state.session['last_visit'] = str(request.url)
+    counter = request.state.session.get("counter", 0) + 1
+    request.state.session["counter"] = counter
+    request.state.session["last_visit"] = str(request.url)
     request.state.session_modified = True
 
     return {
         "session_counter": counter,
-        "session_id": getattr(request.state, 'session_id', None),
-        "message": f"This is visit number {counter}"
+        "session_id": getattr(request.state, "session_id", None),
+        "message": f"This is visit number {counter}",
     }
+
 
 app_router.register_with_app(app)
 
 try:
     from .admin import ADMIN_AVAILABLE, setup_admin
+
     if ADMIN_AVAILABLE:
         setup_admin(app, engine, use_jwt_auth=True)
         logger.info("QuickRoute Admin initialized with JWT authentication")
@@ -140,15 +157,20 @@ try:
 except ImportError as e:
     logger.warning(f"Could not initialize admin: {e}")
 
+
 @app.get("/")
 async def root(request: Request):
     """Health check endpoint with middleware demonstration"""
     return {
         "ok": True,
-        "request_id": getattr(request.state, 'request_id', None),
-        "authenticated": getattr(request.state, 'authenticated', False),
-        "user_id": getattr(request.state.user, 'id', None) if getattr(request.state, 'user', None) else None,
-        "session_data": dict(getattr(request.state, 'session', {})),
+        "request_id": getattr(request.state, "request_id", None),
+        "authenticated": getattr(request.state, "authenticated", False),
+        "user_id": (
+            getattr(request.state.user, "id", None)
+            if getattr(request.state, "user", None)
+            else None
+        ),
+        "session_data": dict(getattr(request.state, "session", {})),
     }
 
 
@@ -165,34 +187,38 @@ async def middleware_info(request: Request):
             "client_ip": request.client.host if request.client else "unknown",
         },
         "state_info": {
-            "request_id": getattr(request.state, 'request_id', None),
-            "authenticated": getattr(request.state, 'authenticated', False),
-            "user_id": getattr(request.state.user, 'id', None) if getattr(request.state, 'user', None) else None,
-            "session_id": getattr(request.state, 'session_id', None),
-            "session_keys": list(getattr(request.state, 'session', {}).keys()),
+            "request_id": getattr(request.state, "request_id", None),
+            "authenticated": getattr(request.state, "authenticated", False),
+            "user_id": (
+                getattr(request.state.user, "id", None)
+                if getattr(request.state, "user", None)
+                else None
+            ),
+            "session_id": getattr(request.state, "session_id", None),
+            "session_keys": list(getattr(request.state, "session", {}).keys()),
         },
         "security_headers": {
             "csrf_token": headers.get("x-csrftoken"),
             "request_id": headers.get("x-request-id"),
             "processing_time": headers.get("x-processing-time"),
-        }
+        },
     }
 
 
 @app.post("/session-test")
 async def session_test(request: Request):
     """Test session functionality"""
-    if not hasattr(request.state, 'session'):
+    if not hasattr(request.state, "session"):
         request.state.session = {}
 
     # Increment counter in session
-    counter = request.state.session.get('counter', 0) + 1
-    request.state.session['counter'] = counter
-    request.state.session['last_visit'] = str(request.url)
+    counter = request.state.session.get("counter", 0) + 1
+    request.state.session["counter"] = counter
+    request.state.session["last_visit"] = str(request.url)
     request.state.session_modified = True
 
     return {
         "session_counter": counter,
-        "session_id": getattr(request.state, 'session_id', None),
-        "message": f"This is visit number {counter}"
+        "session_id": getattr(request.state, "session_id", None),
+        "message": f"This is visit number {counter}",
     }

@@ -1,11 +1,8 @@
 from sqladmin import Admin, ModelView
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.responses import RedirectResponse
-from datetime import datetime
-from typing import Optional
+from fastapi import FastAPI, Request
 
 from .models import User, BlacklistedToken
-from .admin_auth import QuickRouteAdmin, create_admin_with_auth
+from .admin_auth import create_admin_with_auth
 from .settings import settings
 
 
@@ -18,30 +15,23 @@ class UserAdmin(ModelView, model=User):
         User.is_active,
         User.is_superuser,
         User.created_at,
-        User.updated_at
+        User.updated_at,
     ]
 
     column_searchable_list = [User.email]
     column_sortable_list = [User.created_at, User.updated_at]
     column_default_sort = [(User.created_at, True)]
 
-    form_columns = [
-        User.email,
-        User.is_active,
-        User.is_superuser
-    ]
+    form_columns = [User.email, User.is_active, User.is_superuser]
 
     form_widget_args = {
-        User.email: {
-            "placeholder": "Enter email address",
-            "type": "email"
-        },
+        User.email: {"placeholder": "Enter email address", "type": "email"},
         User.is_active: {
             "disabled": False,
         },
         User.is_superuser: {
             "disabled": False,
-        }
+        },
     }
 
     name = "User"
@@ -55,7 +45,7 @@ class UserAdmin(ModelView, model=User):
 
     async def is_accessible(self, request: Request) -> bool:
         """Check if user has access to User admin."""
-        if not hasattr(request.state, 'admin_user'):
+        if not hasattr(request.state, "admin_user"):
             return False
 
         admin_user = request.state.admin_user
@@ -82,7 +72,7 @@ class BlacklistedTokenAdmin(ModelView, model=BlacklistedToken):
         BlacklistedToken.jti,
         BlacklistedToken.token_type,
         BlacklistedToken.blacklisted_at,
-        BlacklistedToken.expires_at
+        BlacklistedToken.expires_at,
     ]
 
     column_searchable_list = [BlacklistedToken.jti]
@@ -96,12 +86,12 @@ class BlacklistedTokenAdmin(ModelView, model=BlacklistedToken):
     icon = "fas fa-ban"
 
     can_create = False  # No manual creation
-    can_edit = False    # No editing
-    can_delete = True   # Allow manual deletion of expired tokens
+    can_edit = False  # No editing
+    can_delete = True  # Allow manual deletion of expired tokens
 
     async def is_accessible(self, request: Request) -> bool:
         """Check if user has access to Token admin."""
-        if not hasattr(request.state, 'admin_user'):
+        if not hasattr(request.state, "admin_user"):
             return False
 
         admin_user = request.state.admin_user
@@ -126,16 +116,10 @@ def setup_admin(app: FastAPI, engine, use_jwt_auth: bool = True):
     """
     if use_jwt_auth:
         admin = create_admin_with_auth(
-            app=app,
-            engine=engine,
-            title=f"{settings.QUICKROUTE_TITLE} Admin"
+            app=app, engine=engine, title=f"{settings.QUICKROUTE_TITLE} Admin"
         )
     else:
-        admin = Admin(
-            app=app,
-            engine=engine,
-            title=f"{settings.QUICKROUTE_TITLE} Admin"
-        )
+        admin = Admin(app=app, engine=engine, title=f"{settings.QUICKROUTE_TITLE} Admin")
 
     admin.add_view(UserAdmin)
     admin.add_view(BlacklistedTokenAdmin)
@@ -150,11 +134,12 @@ def is_admin_enabled() -> bool:
     Returns:
         bool: True if admin should be enabled
     """
-    return getattr(settings, 'ENABLE_ADMIN', True)
+    return getattr(settings, "ENABLE_ADMIN", True)
 
 
 try:
     from sqladmin import Admin
+
     ADMIN_AVAILABLE = True
 except ImportError:
     ADMIN_AVAILABLE = False

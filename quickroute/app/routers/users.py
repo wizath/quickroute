@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -27,7 +27,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 @router.get("/", response_model=list[UserResponse])
 async def list_users(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_superuser)
+    current_user: User = Depends(get_current_superuser),
 ):
     """List all users (superuser only)"""
     result = await session.scalars(select(User))

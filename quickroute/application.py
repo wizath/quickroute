@@ -5,8 +5,7 @@ Provides a interface for QuickRoute applications.
 """
 
 import os
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 from fastapi import FastAPI
 from rich.console import Console
 
@@ -20,11 +19,13 @@ class QuickRoute:
     Provides a familiar interface for creating and configuring QuickRoute applications.
     """
 
-    def __init__(self,
-                 title: str = "QuickRoute API",
-                 description: str = "async web framework",
-                 version: str = "1.0.0",
-                 settings_module: Optional[str] = None):
+    def __init__(
+        self,
+        title: str = "QuickRoute API",
+        description: str = "async web framework",
+        version: str = "1.0.0",
+        settings_module: Optional[str] = None,
+    ):
         """
         Initialize QuickRoute application.
 
@@ -44,16 +45,13 @@ class QuickRoute:
 
         try:
             from .app import settings
+
             self.settings = settings
         except ImportError as e:
             console.print(f"[red]Error importing settings: {e}")
             raise
 
-        self.app = FastAPI(
-            title=title,
-            description=description,
-            version=version
-        )
+        self.app = FastAPI(title=title, description=description, version=version)
 
         self._initialize_components()
 
@@ -61,36 +59,44 @@ class QuickRoute:
         """Initialize QuickRoute components."""
         try:
             from .app import load_middleware
+
             load_middleware(self.app)
         except ImportError as e:
             console.print(f"[yellow]Warning: Could not load middleware: {e}")
 
         try:
             from .app import ADMIN_AVAILABLE, setup_admin
+
             if ADMIN_AVAILABLE:
                 from .app.database import engine
+
                 setup_admin(self.app, engine)
         except ImportError:
             pass  # Admin is optional
 
         try:
             from .app import WEBSOCKET_AVAILABLE
+
             if WEBSOCKET_AVAILABLE:
                 from .websocket import get_websocket_manager
+
                 websocket_manager = get_websocket_manager()
         except ImportError:
             pass  # WebSocket is optional
 
         try:
             from .app import PLUGINS_AVAILABLE
+
             if PLUGINS_AVAILABLE:
                 from .plugins import initialize_plugins
+
                 initialize_plugins(self.settings)
         except ImportError:
             pass  # Plugins are optional
 
         try:
             from .app import JOBS_AVAILABLE
+
             if JOBS_AVAILABLE:
                 # Jobs are auto-registered when imported
                 pass
@@ -124,12 +130,8 @@ class QuickRoute:
     def run(self, host: str = "0.0.0.0", port: int = 8000, **kwargs):
         """Run the development server."""
         import uvicorn
-        uvicorn.run(
-            self.app,
-            host=host,
-            port=port,
-            **kwargs
-        )
+
+        uvicorn.run(self.app, host=host, port=port, **kwargs)
 
     def __repr__(self):
         return f"QuickRoute(title='{self.title}', version='{self.version}')"
@@ -151,7 +153,7 @@ def create_app(
     description: str = "async web framework",
     version: str = "1.0.0",
     settings_module: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> QuickRoute:
     """
     Convenience function to create a QuickRoute application.
@@ -171,7 +173,7 @@ def create_app(
         description=description,
         version=version,
         settings_module=settings_module,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -186,6 +188,7 @@ def get_app() -> FastAPI:
 def get_settings():
     """Get the current settings (Django-like)."""
     from .app import settings
+
     return settings
 
 

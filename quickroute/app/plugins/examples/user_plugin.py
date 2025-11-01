@@ -45,9 +45,9 @@ class UserPlugin(BasePlugin):
         try:
             self.start_time = datetime.utcnow()
             self.custom_data = {
-                'initialized_at': self.start_time.isoformat(),
-                'user_count': 0,
-                'feature_flags': ['demo', 'example']
+                "initialized_at": self.start_time.isoformat(),
+                "user_count": 0,
+                "feature_flags": ["demo", "example"],
             }
 
             # Example: Set up any required resources
@@ -68,31 +68,33 @@ class UserPlugin(BasePlugin):
     def add_user(self, user_id: int, user_data: Dict[str, Any]):
         """Example plugin method."""
         if self.enabled:
-            self.custom_data[f'user_{user_id}'] = user_data
-            self.custom_data['user_count'] = len([k for k in self.custom_data.keys() if k.startswith('user_')])
+            self.custom_data[f"user_{user_id}"] = user_data
+            self.custom_data["user_count"] = len(
+                [k for k in self.custom_data.keys() if k.startswith("user_")]
+            )
             logger.info(f"Added user {user_id} to plugin")
 
     def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Example plugin method."""
         if self.enabled:
-            return self.custom_data.get(f'user_{user_id}')
+            return self.custom_data.get(f"user_{user_id}")
         return None
 
     def get_stats(self) -> Dict[str, Any]:
         """Get plugin statistics."""
         if not self.enabled:
-            return {'enabled': False}
+            return {"enabled": False}
 
         uptime = None
         if self.start_time:
             uptime = (datetime.utcnow() - self.start_time).total_seconds()
 
         return {
-            'enabled': True,
-            'uptime_seconds': uptime,
-            'user_count': self.custom_data.get('user_count', 0),
-            'feature_flags': self.custom_data.get('feature_flags', []),
-            'initialized_at': self.custom_data.get('initialized_at')
+            "enabled": True,
+            "uptime_seconds": uptime,
+            "user_count": self.custom_data.get("user_count", 0),
+            "feature_flags": self.custom_data.get("feature_flags", []),
+            "initialized_at": self.custom_data.get("initialized_at"),
         }
 
     def get_status(self) -> Dict[str, Any]:
@@ -106,6 +108,7 @@ class UserPlugin(BasePlugin):
 def register_user_plugin(settings):
     """Helper function to register the user plugin."""
     from ..base import register_plugin
+
     plugin = UserPlugin(settings)
     register_plugin(plugin, settings)
     return plugin

@@ -31,9 +31,4 @@ def get_database_session():
 
 
 # Convenience exports
-__all__ = [
-    "create_app",
-    "get_settings",
-    "get_user_model",
-    "get_database_session"
-]
+__all__ = ["create_app", "get_settings", "get_user_model", "get_database_session"]

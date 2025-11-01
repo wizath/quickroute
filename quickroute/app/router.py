@@ -21,8 +21,8 @@ class Router:
         self.tags = tags or []
         # FastAPI requires prefix to start with '/' if provided
         fastapi_prefix = prefix if not prefix else ""
-        if fastapi_prefix and not fastapi_prefix.startswith('/'):
-            fastapi_prefix = '/' + fastapi_prefix
+        if fastapi_prefix and not fastapi_prefix.startswith("/"):
+            fastapi_prefix = "/" + fastapi_prefix
         self.router = APIRouter(prefix=fastapi_prefix, tags=tags)
         self.websocket_handlers: List[Callable] = []
 
@@ -93,7 +93,7 @@ class Router:
 
         return decorator
 
-    def include_router(self, router: Union[APIRouter, 'Router'], prefix: str = ""):
+    def include_router(self, router: Union[APIRouter, "Router"], prefix: str = ""):
         """Include another router."""
         if isinstance(router, Router):
             # Include WebSocket handlers from child router
@@ -107,7 +107,7 @@ class Router:
         app.include_router(self.router)
 
         for handler in self.websocket_handlers:
-            if hasattr(handler, '_websocket_path'):
+            if hasattr(handler, "_websocket_path"):
                 ws_path = handler._websocket_path
                 ws_kwargs = handler._websocket_kwargs or {}
 
@@ -115,7 +115,9 @@ class Router:
                 async def websocket_wrapper(websocket, _handler=handler):
                     return await _handler(websocket)
 
-        logger.info(f"Registered router with prefix: {self.prefix} (HTTP routes + {len(self.websocket_handlers)} WebSocket routes)")
+        logger.info(
+            f"Registered router with prefix: {self.prefix} (HTTP routes + {len(self.websocket_handlers)} WebSocket routes)"
+        )
 
     def route(self, path: str, methods: List[str], **kwargs):
         """Generic route decorator for multiple methods."""
@@ -135,5 +137,5 @@ def WebSocketRouter(prefix: str = "", tags: Optional[List[str]] = None) -> Route
     """
     Create a router optimized for WebSocket endpoints.
     """
-    router = Router(prefix=prefix, tags=tags or ['websocket'])
+    router = Router(prefix=prefix, tags=tags or ["websocket"])
     return router

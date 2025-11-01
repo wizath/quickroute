@@ -29,7 +29,7 @@ class TestTokenBlacklisting:
             jti=jti,
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=token_data["expires_at"]
+            expires_at=token_data["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -64,7 +64,7 @@ class TestTokenBlacklisting:
                 jti=token_data["jti"],
                 token_type="access",
                 blacklisted_at=datetime.utcnow(),
-                expires_at=token_data["expires_at"]
+                expires_at=token_data["expires_at"],
             )
             test_db.add(blacklisted)
             tokens_to_blacklist.append(blacklisted)
@@ -87,15 +87,13 @@ class TestTokenBlacklisting:
             jti=jti,
             token_type="refresh",
             blacklisted_at=datetime.utcnow(),
-            expires_at=token_data["expires_at"]
+            expires_at=token_data["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
 
         # Verify it was blacklisted as refresh token
-        result = await test_db.execute(
-            select(BlacklistedToken).where(BlacklistedToken.jti == jti)
-        )
+        result = await test_db.execute(select(BlacklistedToken).where(BlacklistedToken.jti == jti))
         found = result.scalar_one_or_none()
 
         assert found is not None
@@ -116,13 +114,13 @@ class TestTokenRevocation:
         # Simulate logout by blacklisting both tokens
         for token_data, token_type in [
             (access_token_data, "access"),
-            (refresh_token_data, "refresh")
+            (refresh_token_data, "refresh"),
         ]:
             blacklisted = BlacklistedToken(
                 jti=token_data["jti"],
                 token_type=token_type,
                 blacklisted_at=datetime.utcnow(),
-                expires_at=token_data["expires_at"]
+                expires_at=token_data["expires_at"],
             )
             test_db.add(blacklisted)
 
@@ -162,7 +160,7 @@ class TestTokenRevocation:
                 jti=token_data["jti"],
                 token_type="access" if "access" in str(token_data.get("token", "")) else "refresh",
                 blacklisted_at=datetime.utcnow(),
-                expires_at=token_data["expires_at"]
+                expires_at=token_data["expires_at"],
             )
             test_db.add(blacklisted)
 
@@ -204,7 +202,7 @@ class TestTokenCleanup:
                 jti=f"cleanup-token-{i}",
                 token_type="access",
                 blacklisted_at=datetime.utcnow() - timedelta(days=10),
-                expires_at=datetime.utcnow() - timedelta(days=5)
+                expires_at=datetime.utcnow() - timedelta(days=5),
             )
             test_db.add(expired)
 
@@ -213,7 +211,7 @@ class TestTokenCleanup:
             jti="active-token",
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=5)
+            expires_at=datetime.utcnow() + timedelta(days=5),
         )
         test_db.add(active)
         await test_db.commit()
@@ -278,7 +276,7 @@ class TestTokenSecurityScenarios:
             jti=stolen_jti,
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=token_data["expires_at"]
+            expires_at=token_data["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -293,7 +291,9 @@ class TestTokenSecurityScenarios:
         # In real app, middleware would check blacklist and deny access
 
     @pytest.mark.asyncio
-    async def test_compromised_account_revokes_all_tokens(self, test_db: AsyncSession, test_user: User):
+    async def test_compromised_account_revokes_all_tokens(
+        self, test_db: AsyncSession, test_user: User
+    ):
         """Test revoking all tokens when account is compromised."""
         # User has multiple active sessions (tokens)
         user_tokens = []
@@ -309,7 +309,7 @@ class TestTokenSecurityScenarios:
                 jti=token_data["jti"],
                 token_type="access",
                 blacklisted_at=datetime.utcnow(),
-                expires_at=token_data["expires_at"]
+                expires_at=token_data["expires_at"],
             )
             test_db.add(blacklisted)
 
@@ -344,7 +344,7 @@ class TestTokenSecurityScenarios:
             jti=old_refresh["jti"],
             token_type="refresh",
             blacklisted_at=datetime.utcnow(),
-            expires_at=old_refresh["expires_at"]
+            expires_at=old_refresh["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -376,7 +376,7 @@ class TestTokenSecurityScenarios:
             jti=jti,
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(minutes=30)
+            expires_at=datetime.utcnow() + timedelta(minutes=30),
         )
         test_db.add(token1)
         await test_db.commit()
@@ -386,7 +386,7 @@ class TestTokenSecurityScenarios:
             jti=jti,  # Same JTI
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(minutes=30)
+            expires_at=datetime.utcnow() + timedelta(minutes=30),
         )
         test_db.add(token2)
 
@@ -403,7 +403,7 @@ class TestTokenSecurityScenarios:
             jti=token_data["jti"],
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=token_data["expires_at"]
+            expires_at=token_data["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -412,8 +412,6 @@ class TestTokenSecurityScenarios:
         await test_db.close()
 
         # Query in "new session" (same test_db for testing)
-        from quickroute.app.database import Base, create_async_engine, async_sessionmaker
-        from sqlalchemy.pool import StaticPool
 
         # This simulates persistence
         result = await test_db.execute(
@@ -446,7 +444,7 @@ class TestSecurityAttacks:
             jti=captured_jti,
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=token_data["expires_at"]
+            expires_at=token_data["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -479,7 +477,7 @@ class TestSecurityAttacks:
             jti=original_token["jti"],
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=original_token["expires_at"]
+            expires_at=original_token["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -517,13 +515,12 @@ class TestSecurityAttacks:
         # Attacker tries to forge token with same JTI
         # But can't because JTI is UUID and unpredictable
         import jwt
-        from quickroute.app.settings import settings
 
         forged_payload = {
             "sub": str(user_id),
             "jti": legit_jti,  # Reuse JTI
             "type": "access",
-            "exp": datetime.utcnow() + timedelta(minutes=30)
+            "exp": datetime.utcnow() + timedelta(minutes=30),
         }
 
         # Attacker doesn't know the secret, so can't create valid signature
@@ -588,11 +585,14 @@ class TestPasswordSecurity:
 
         # But both should verify correctly
         from quickroute.app.auth import verify_password
+
         assert verify_password(password, hash1) is True
         assert verify_password(password, hash2) is True
 
     @pytest.mark.asyncio
-    async def test_password_change_invalidates_old_tokens(self, test_db: AsyncSession, test_user: User):
+    async def test_password_change_invalidates_old_tokens(
+        self, test_db: AsyncSession, test_user: User
+    ):
         """Test that changing password should invalidate old tokens."""
         # Create token with old password
         old_token = create_access_token(test_user.id)
@@ -611,7 +611,7 @@ class TestPasswordSecurity:
             jti=old_token["jti"],
             token_type="access",
             blacklisted_at=datetime.utcnow(),
-            expires_at=old_token["expires_at"]
+            expires_at=old_token["expires_at"],
         )
         test_db.add(blacklisted)
         await test_db.commit()
@@ -667,8 +667,12 @@ class TestJWTSecurityBestPractices:
         import jwt
         from quickroute.app.settings import settings
 
-        access_payload = jwt.decode(access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        refresh_payload = jwt.decode(refresh_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        access_payload = jwt.decode(
+            access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+        refresh_payload = jwt.decode(
+            refresh_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
 
         assert "exp" in access_payload
         assert "exp" in refresh_payload
@@ -689,6 +693,7 @@ class TestJWTSecurityBestPractices:
 
         # JTIs should be UUIDs
         import uuid
+
         uuid.UUID(token1["jti"])  # Should not raise
         uuid.UUID(token2["jti"])  # Should not raise
 
@@ -701,8 +706,12 @@ class TestJWTSecurityBestPractices:
         import jwt
         from quickroute.app.settings import settings
 
-        access_payload = jwt.decode(access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        refresh_payload = jwt.decode(refresh_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        access_payload = jwt.decode(
+            access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+        refresh_payload = jwt.decode(
+            refresh_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
 
         assert access_payload["type"] == "access"
         assert refresh_payload["type"] == "refresh"
@@ -714,7 +723,9 @@ class TestJWTSecurityBestPractices:
         import jwt
         from quickroute.app.settings import settings
 
-        payload = jwt.decode(token_data["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(
+            token_data["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
 
         assert "iat" in payload
         # iat should be a numeric timestamp

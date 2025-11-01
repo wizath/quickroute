@@ -6,9 +6,9 @@ decorators for WebSocket handling.
 
 import json
 import asyncio
-from typing import Callable, Dict, Any, Optional, List, Union
+from typing import Callable, Dict, Any, Optional, Union
 from functools import wraps
-from fastapi import WebSocket, WebSocketDisconnect, Depends
+from fastapi import WebSocket, WebSocketDisconnect
 from .connection import get_websocket_manager, WebSocketConnection
 from .exceptions import WebSocketException, WebSocketDisconnect, WebSocketAuthError
 from ..logging import logger
@@ -27,6 +27,7 @@ def websocket(path: str, **kwargs):
         async def chat_websocket(websocket, connection):
             await websocket.accept()
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(websocket: WebSocket, **func_kwargs):
@@ -82,6 +83,7 @@ def websocket_room(room_name: str, auto_join: bool = True):
         async def chat_room_handler(websocket, connection, room):
             await room.broadcast_json({"type": "join", "user": connection.connection_id})
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(websocket: WebSocket, connection: WebSocketConnection, **func_kwargs):
@@ -102,21 +104,21 @@ def websocket_room(room_name: str, auto_join: bool = True):
                 return result
 
             except WebSocketDisconnect:
-                logger.info(f"Room member disconnected: {connection.connection_id} from {room_name}")
+                logger.info(
+                    f"Room member disconnected: {connection.connection_id} from {room_name}"
+                )
                 if room and not room.is_empty:
-                    await room.broadcast_json({
-                        "type": "leave",
-                        "user": connection.connection_id,
-                        "room": room_name
-                    }, exclude_connection=connection)
+                    await room.broadcast_json(
+                        {"type": "leave", "user": connection.connection_id, "room": room_name},
+                        exclude_connection=connection,
+                    )
             except Exception as e:
                 logger.error(f"Room WebSocket error: {connection.connection_id}: {e}")
                 if room:
-                    await room.broadcast_json({
-                        "type": "error",
-                        "user": connection.connection_id,
-                        "error": str(e)
-                    }, exclude_connection=connection)
+                    await room.broadcast_json(
+                        {"type": "error", "user": connection.connection_id, "error": str(e)},
+                        exclude_connection=connection,
+                    )
                 raise
 
         wrapper._websocket_room = room_name
@@ -149,6 +151,7 @@ def websocket_auth(auth_func: Optional[Callable] = None):
             # Connection is authenticated here
             pass
     """
+
     def decorator(func: Callable = None, *, _auth_func: Callable = None) -> Callable:
         if func is None:
             # Called with parameters: @websocket_auth(auth_func)
@@ -181,7 +184,9 @@ def websocket_auth(auth_func: Optional[Callable] = None):
                     if user:
                         connection.user = user
                         connection.authenticated = True
-                        logger.info(f"WebSocket authenticated: {connection.connection_id} -> {user}")
+                        logger.info(
+                            f"WebSocket authenticated: {connection.connection_id} -> {user}"
+                        )
                     else:
                         raise WebSocketAuthError("Authentication failed")
 
@@ -216,6 +221,7 @@ def websocket_message_handler(message_type: str):
         async def handle_chat_message(connection, data):
             await connection.send_json({"type": "chat_response", "data": data})
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(connection: WebSocketConnection, data: Dict[str, Any], **kwargs):
@@ -226,11 +232,9 @@ def websocket_message_handler(message_type: str):
                     return func(connection, data, **kwargs)
             except Exception as e:
                 logger.error(f"Message handler error for {message_type}: {e}")
-                await connection.send_json({
-                    "type": "error",
-                    "message_type": message_type,
-                    "error": str(e)
-                })
+                await connection.send_json(
+                    {"type": "error", "message_type": message_type, "error": str(e)}
+                )
 
         wrapper._message_type = message_type
         wrapper._is_message_handler = True
@@ -253,6 +257,7 @@ class WebSocketRouter:
 
     def websocket(self, path: str, **kwargs):
         """Register a WebSocket handler."""
+
         def decorator(func: Callable) -> Callable:
             full_path = f"{self.prefix}{path}"
             handler = websocket(path, **kwargs)(func)
@@ -263,6 +268,7 @@ class WebSocketRouter:
 
     def room(self, room_name: str, auto_join: bool = True):
         """Register a room handler."""
+
         def decorator(func: Callable) -> Callable:
             handler = websocket_room(room_name, auto_join)(func)
             self.rooms[room_name] = handler
@@ -272,6 +278,7 @@ class WebSocketRouter:
 
     def message(self, message_type: str):
         """Register a message handler."""
+
         def decorator(func: Callable) -> Callable:
             handler = websocket_message_handler(message_type)(func)
             self.message_handlers[message_type] = handler
@@ -324,34 +331,36 @@ class WebSocketMessageProcessor:
 
         except Exception as e:
             logger.error(f"Message processing error: {e}")
-            await connection.send_json({
-                "type": "error",
-                "error": str(e)
-            })
+            await connection.send_json({"type": "error", "error": str(e)})
 
     async def handle_default_message(self, connection: WebSocketConnection, data: Dict[str, Any]):
         """Default message handler for unknown message types."""
-        await connection.send_json({
-            "type": "unknown_message",
-            "original_type": data.get("type", "unknown"),
-            "message": "Unknown message type"
-        })
+        await connection.send_json(
+            {
+                "type": "unknown_message",
+                "original_type": data.get("type", "unknown"),
+                "message": "Unknown message type",
+            }
+        )
 
 
 # Convenience functions for common patterns
 def require_auth(func: Callable) -> Callable:
     """Decorator to require authentication for WebSocket handlers."""
+
     @wraps(func)
     async def wrapper(websocket: WebSocket, connection: WebSocketConnection, **kwargs):
         if not connection.authenticated:
             await connection.close(4003, "Authentication required")
             return
         return await func(websocket, connection, **kwargs)
+
     return wrapper
 
 
 def require_room(room_name: str) -> Callable:
     """Decorator to require room membership."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(websocket: WebSocket, connection: WebSocketConnection, **kwargs):
@@ -359,12 +368,15 @@ def require_room(room_name: str) -> Callable:
                 await connection.close(4003, f"Room membership required: {room_name}")
                 return
             return await func(websocket, connection, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 def rate_limit(max_messages: int, time_window: int = 60) -> Callable:
     """Decorator to rate limit WebSocket messages."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(websocket: WebSocket, connection: WebSocketConnection, **kwargs):
@@ -372,23 +384,26 @@ def rate_limit(max_messages: int, time_window: int = 60) -> Callable:
             current_time = asyncio.get_event_loop().time()
             rate_limit_key = f"rate_limit_{connection.connection_id}"
 
-            if not hasattr(connection, '_message_times'):
+            if not hasattr(connection, "_message_times"):
                 connection._message_times = []
 
             # Clean old messages
             connection._message_times = [
-                t for t in connection._message_times
-                if current_time - t < time_window
+                t for t in connection._message_times if current_time - t < time_window
             ]
 
             if len(connection._message_times) >= max_messages:
-                await connection.send_json({
-                    "type": "rate_limit",
-                    "message": f"Rate limit exceeded: {max_messages} messages per {time_window} seconds"
-                })
+                await connection.send_json(
+                    {
+                        "type": "rate_limit",
+                        "message": f"Rate limit exceeded: {max_messages} messages per {time_window} seconds",
+                    }
+                )
                 return
 
             connection._message_times.append(current_time)
             return await func(websocket, connection, **kwargs)
+
         return wrapper
+
     return decorator

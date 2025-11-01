@@ -17,11 +17,10 @@ async def get_session() -> AsyncSession:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    session: AsyncSession = Depends(get_session)
+    token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(get_session)
 ) -> User:
     """Get current user from JWT token"""
-    logger.debug(f"Authenticating user with token")
+    logger.debug("Authenticating user with token")
 
     # Decode token
     payload = decode_token(token)
@@ -34,9 +33,7 @@ async def get_current_user(
         raise AuthenticationError("Invalid token type")
 
     jti = payload.get("jti")
-    result = await session.execute(
-        select(BlacklistedToken).where(BlacklistedToken.jti == jti)
-    )
+    result = await session.execute(select(BlacklistedToken).where(BlacklistedToken.jti == jti))
     if result.scalar_one_or_none():
         logger.warning(f"Attempted to use blacklisted token: {jti}")
         raise AuthenticationError("Token has been revoked")
@@ -57,9 +54,7 @@ async def get_current_user(
     return user
 
 
-async def get_current_superuser(
-    current_user: User = Depends(get_current_user)
-) -> User:
+async def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
     """Get current user and verify they are a superuser"""
     if not current_user.is_superuser:
         logger.warning(f"Non-superuser attempted admin access: {current_user.email}")

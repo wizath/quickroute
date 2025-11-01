@@ -4,11 +4,10 @@ WebSocket connection and room management for QuickRoute.
 
 import asyncio
 import json
-import weakref
 from typing import Dict, List, Set, Optional, Any, Callable
 from datetime import datetime
-from fastapi import WebSocket, WebSocketDisconnect
-from .exceptions import WebSocketRoomError, WebSocketMessageError
+from fastapi import WebSocket
+from .exceptions import WebSocketMessageError
 from ..logging import logger
 
 
@@ -198,7 +197,9 @@ class WebSocketManager:
         self._cleanup_task: Optional[asyncio.Task] = None
         self._cleanup_interval = 300  # 5 minutes
 
-    async def create_connection(self, websocket: WebSocket, connection_id: str = None) -> WebSocketConnection:
+    async def create_connection(
+        self, websocket: WebSocket, connection_id: str = None
+    ) -> WebSocketConnection:
         """Create a new WebSocket connection."""
         connection = WebSocketConnection(websocket, connection_id)
         self.connections[connection.connection_id] = connection
@@ -255,7 +256,9 @@ class WebSocketManager:
         room = self.rooms.get(room_name)
         return list(room.connections) if room else []
 
-    async def broadcast_to_room(self, room_name: str, data: Any, exclude_connection: WebSocketConnection = None):
+    async def broadcast_to_room(
+        self, room_name: str, data: Any, exclude_connection: WebSocketConnection = None
+    ):
         """Broadcast data to all connections in a room."""
         room = self.rooms.get(room_name)
         if room:
@@ -284,7 +287,11 @@ class WebSocketManager:
 
     async def get_user_connections(self, user_id: Any) -> List[WebSocketConnection]:
         """Get all connections for a specific user."""
-        return [conn for conn in self.connections.values() if conn.user and getattr(conn.user, 'id', None) == user_id]
+        return [
+            conn
+            for conn in self.connections.values()
+            if conn.user and getattr(conn.user, "id", None) == user_id
+        ]
 
     async def send_to_user(self, user_id: Any, data: Any):
         """Send data to all connections for a specific user."""
@@ -295,7 +302,9 @@ class WebSocketManager:
             try:
                 await connection.send_text(message)
             except Exception as e:
-                logger.error(f"Failed to send to user {user_id} connection {connection.connection_id}: {e}")
+                logger.error(
+                    f"Failed to send to user {user_id} connection {connection.connection_id}: {e}"
+                )
 
     def register_connection_handler(self, path: str, handler: Callable):
         """Register a WebSocket connection handler for a path."""
@@ -356,12 +365,12 @@ class WebSocketManager:
     def get_stats(self) -> dict:
         """Get WebSocket system statistics."""
         return {
-            'total_connections': len(self.connections),
-            'active_connections': len([c for c in self.connections.values() if not c.is_closed]),
-            'total_rooms': len(self.rooms),
-            'active_rooms': len([r for r in self.rooms.values() if not r.is_empty]),
-            'registered_handlers': len(self._connection_handlers),
-            'room_handlers': len(self._room_handlers),
+            "total_connections": len(self.connections),
+            "active_connections": len([c for c in self.connections.values() if not c.is_closed]),
+            "total_rooms": len(self.rooms),
+            "active_rooms": len([r for r in self.rooms.values() if not r.is_empty]),
+            "registered_handlers": len(self._connection_handlers),
+            "room_handlers": len(self._room_handlers),
         }
 
 

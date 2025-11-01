@@ -5,18 +5,15 @@ Tests for QuickRoute job/periodic task system.
 import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from quickroute.app.jobs import (
     Job,
-    JobRegistry,
     JobScheduler,
     JobStatus,
     JobResult,
     periodic,
 )
-from quickroute.app.example_jobs import cleanup_expired_tokens
 
 
 class TestJob:
@@ -24,6 +21,7 @@ class TestJob:
 
     def test_job_creation(self):
         """Test creating a new job."""
+
         async def test_job_func():
             return {"status": "completed"}
 
@@ -33,7 +31,7 @@ class TestJob:
             schedule="hourly",
             enabled=True,
             max_retries=3,
-            timeout=300
+            timeout=300,
         )
 
         assert job.name == "test_job"
@@ -48,6 +46,7 @@ class TestJob:
 
     def test_job_with_defaults(self):
         """Test job creation with default values."""
+
         async def test_job_func():
             return "completed"
 
@@ -60,6 +59,7 @@ class TestJob:
 
     def test_job_str_representation(self):
         """Test job string representation."""
+
         async def test_job_func():
             return "completed"
 
@@ -103,7 +103,7 @@ class TestJobRegistry:
         job_registry.register(job1)
         assert len(job_registry.jobs) == initial_count + 1
 
-        registered_job2 = job_registry.register(job2)  # Should overwrite
+        job_registry.register(job2)  # Should overwrite
         assert job_registry.jobs["test_duplicate_job"] is job2  # Overwritten
         assert len(job_registry.jobs) == initial_count + 1  # Still same count
 
@@ -137,7 +137,7 @@ class TestJobRegistry:
         jobs = [
             Job(name="list_job1", func=test_job_func, schedule="hourly"),
             Job(name="list_job2", func=test_job_func, schedule="daily"),
-            Job(name="list_job3", func=test_job_func, schedule="weekly")
+            Job(name="list_job3", func=test_job_func, schedule="weekly"),
         ]
 
         initial_count = len(job_registry.jobs)
@@ -188,7 +188,7 @@ class TestJobRegistry:
             started_at=datetime.utcnow(),
             completed_at=datetime.utcnow(),
             result={"data": "success"},
-            execution_time=1.5
+            execution_time=1.5,
         )
 
         job_registry.record_execution("test_job", result)
@@ -204,7 +204,7 @@ class TestJobRegistry:
             started_at=datetime.utcnow(),
             completed_at=datetime.utcnow(),
             error="Test error",
-            execution_time=0.5
+            execution_time=0.5,
         )
 
         job_registry.record_execution("test_job", failed_result)
@@ -232,7 +232,7 @@ class TestJobRegistry:
                 status=JobStatus.COMPLETED,
                 started_at=datetime.utcnow(),
                 completed_at=datetime.utcnow(),
-                execution_time=1.0
+                execution_time=1.0,
             )
 
             # Job can store last result
@@ -452,12 +452,14 @@ class TestPeriodicDecorator:
 
     def test_periodic_decorator(self):
         """Test @periodic decorator."""
+
         @periodic("hourly", name="decorated_job")
         async def decorated_job():
             return "completed"
 
         # Check if job was registered
         from quickroute.app.jobs import job_registry
+
         job = job_registry.get_job("decorated_job")
         assert job is not None
         assert job.name == "decorated_job"
@@ -465,11 +467,13 @@ class TestPeriodicDecorator:
 
     def test_periodic_decorator_defaults(self):
         """Test @periodic decorator with defaults."""
+
         @periodic("daily")
         async def default_job():
             return "completed"
 
         from quickroute.app.jobs import job_registry
+
         job = job_registry.get_job("default_job")
         assert job is not None
         assert job.name == "default_job"  # Function name
@@ -493,7 +497,7 @@ class TestExampleJobs:
                 jti=f"expired-token-{i}",
                 token_type="access",
                 blacklisted_at=datetime.utcnow() - timedelta(days=5),
-                expires_at=datetime.utcnow() - timedelta(days=1)
+                expires_at=datetime.utcnow() - timedelta(days=1),
             )
             test_db.add(token)
             expired_tokens.append(token)
@@ -550,12 +554,13 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_job_error_handling(self):
         """Test job error handling and logging."""
-        from quickroute.app.jobs import Job, JobRegistry
+        from quickroute.app.jobs import Job
 
         async def error_job():
             raise ValueError("Test error")
 
         from quickroute.app.jobs import job_registry
+
         job = Job(name="error_job", func=error_job, schedule="hourly")
         job_registry.register(job)
 
@@ -568,7 +573,7 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_job_execution(self):
         """Test concurrent job execution."""
-        from quickroute.app.jobs import Job, JobRegistry
+        from quickroute.app.jobs import Job
         import asyncio
 
         async def concurrent_job(job_id):
@@ -576,9 +581,12 @@ class TestJobIntegration:
             return f"job_{job_id}_completed"
 
         from quickroute.app.jobs import job_registry
+
         jobs = []
         for i in range(5):
-            job = Job(name=f"concurrent_job_{i}", func=lambda i=i: concurrent_job(i), schedule="hourly")
+            job = Job(
+                name=f"concurrent_job_{i}", func=lambda i=i: concurrent_job(i), schedule="hourly"
+            )
             job_registry.register(job)
             jobs.append(job.name)
 
@@ -594,12 +602,13 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_job_scheduler_lifecycle(self):
         """Test complete job scheduler lifecycle."""
-        from quickroute.app.jobs import Job, JobRegistry
+        from quickroute.app.jobs import Job
 
         async def lifecycle_job():
             return "lifecycle_completed"
 
         from quickroute.app.jobs import job_registry
+
         job = Job(name="lifecycle_job", func=lifecycle_job, schedule="hourly")
         job_registry.register(job)
 

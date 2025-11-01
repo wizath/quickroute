@@ -1,13 +1,12 @@
 from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
-import asyncio
 
 if TYPE_CHECKING:
-    from .models import User
+    pass
 
-T = TypeVar('T', bound=DeclarativeBase)
+T = TypeVar("T", bound=DeclarativeBase)
 
 
 class AsyncModelManager:
@@ -39,6 +38,7 @@ class AsyncModelManager:
     def _get_session(self) -> AsyncSession:
         """Get database session - can be overridden for different session strategies"""
         from .database import AsyncSessionLocal
+
         return AsyncSessionLocal()
 
     async def get(self, **kwargs) -> Optional[T]:
@@ -50,9 +50,7 @@ class AsyncModelManager:
             sqlalchemy.orm.exc.MultipleResultsFound: if multiple results found
         """
         async with self._get_session() as session:
-            result = await session.execute(
-                select(self.model_class).filter_by(**kwargs)
-            )
+            result = await session.execute(select(self.model_class).filter_by(**kwargs))
             return result.scalar_one_or_none()
 
     async def filter(self, **kwargs) -> List[T]:
@@ -61,9 +59,7 @@ class AsyncModelManager:
         Returns list of instances matching criteria.
         """
         async with self._get_session() as session:
-            result = await session.execute(
-                select(self.model_class).filter_by(**kwargs)
-            )
+            result = await session.execute(select(self.model_class).filter_by(**kwargs))
             return result.scalars().all()
 
     async def all(self) -> List[T]:
@@ -143,9 +139,7 @@ class AsyncModelManager:
         Returns True/False.
         """
         async with self._get_session() as session:
-            result = await session.execute(
-                select(self.model_class).filter_by(**kwargs).exists()
-            )
+            result = await session.execute(select(self.model_class).filter_by(**kwargs).exists())
             return result.scalar()
 
     async def count(self, **kwargs) -> int:
@@ -155,15 +149,12 @@ class AsyncModelManager:
         """
         async with self._get_session() as session:
             if kwargs:
-                result = await session.execute(
-                    select(self.model_class).filter_by(**kwargs)
-                )
+                result = await session.execute(select(self.model_class).filter_by(**kwargs))
                 return len(result.scalars().all())
             else:
                 from sqlalchemy import func
-                result = await session.execute(
-                    select(func.count(self.model_class.id))
-                )
+
+                result = await session.execute(select(func.count(self.model_class.id)))
                 return result.scalar()
 
     async def delete(self, **kwargs) -> int:
@@ -172,9 +163,7 @@ class AsyncModelManager:
         Deletes instances matching criteria and returns count.
         """
         async with self._get_session() as session:
-            result = await session.execute(
-                delete(self.model_class).filter_by(**kwargs)
-            )
+            result = await session.execute(delete(self.model_class).filter_by(**kwargs))
             await session.commit()
             return result.rowcount
 
@@ -184,9 +173,7 @@ class AsyncModelManager:
         Returns first instance or None.
         """
         async with self._get_session() as session:
-            result = await session.execute(
-                select(self.model_class).limit(1)
-            )
+            result = await session.execute(select(self.model_class).limit(1))
             return result.scalar_one_or_none()
 
     async def last(self) -> Optional[T]:
@@ -218,9 +205,15 @@ class AsyncQuerySet:
         users = await User.objects.filter(is_active=True).order_by('email')
     """
 
-    def __init__(self, model_class: Type[T], session: AsyncSession = None,
-                 filters: Dict[str, Any] = None, order_by: List[str] = None,
-                 limit: int = None, offset: int = None):
+    def __init__(
+        self,
+        model_class: Type[T],
+        session: AsyncSession = None,
+        filters: Dict[str, Any] = None,
+        order_by: List[str] = None,
+        limit: int = None,
+        offset: int = None,
+    ):
         self.model_class = model_class
         self._session = session
         self._filters = filters or {}
@@ -228,40 +221,37 @@ class AsyncQuerySet:
         self._limit = limit
         self._offset = offset
 
-    def filter(self, **kwargs) -> 'AsyncQuerySet':
+    def filter(self, **kwargs) -> "AsyncQuerySet":
         """Add filter conditions"""
         new_filters = self._filters.copy()
         new_filters.update(kwargs)
         return AsyncQuerySet(
-            self.model_class, self._session, new_filters,
-            self._order_by, self._limit, self._offset
+            self.model_class, self._session, new_filters, self._order_by, self._limit, self._offset
         )
 
-    def order_by(self, *fields) -> 'AsyncQuerySet':
+    def order_by(self, *fields) -> "AsyncQuerySet":
         """Add ordering"""
         new_order = list(self._order_by) + list(fields)
         return AsyncQuerySet(
-            self.model_class, self._session, self._filters,
-            new_order, self._limit, self._offset
+            self.model_class, self._session, self._filters, new_order, self._limit, self._offset
         )
 
-    def limit(self, count: int) -> 'AsyncQuerySet':
+    def limit(self, count: int) -> "AsyncQuerySet":
         """Set limit"""
         return AsyncQuerySet(
-            self.model_class, self._session, self._filters,
-            self._order_by, count, self._offset
+            self.model_class, self._session, self._filters, self._order_by, count, self._offset
         )
 
-    def offset(self, count: int) -> 'AsyncQuerySet':
+    def offset(self, count: int) -> "AsyncQuerySet":
         """Set offset"""
         return AsyncQuerySet(
-            self.model_class, self._session, self._filters,
-            self._order_by, self._limit, count
+            self.model_class, self._session, self._filters, self._order_by, self._limit, count
         )
 
     async def execute(self) -> List[T]:
         """Execute the query and return results"""
         from ..database import AsyncSessionLocal
+
         session = self._session or AsyncSessionLocal()
 
         try:
@@ -273,7 +263,7 @@ class AsyncQuerySet:
 
             # Apply ordering
             for field in self._order_by:
-                if field.startswith('-'):
+                if field.startswith("-"):
                     # Descending order
                     query = query.order_by(getattr(self.model_class, field[1:]).desc())
                 else:
@@ -297,6 +287,7 @@ class AsyncQuerySet:
         """Count results"""
         from ..database import AsyncSessionLocal
         from sqlalchemy import func
+
         session = self._session or AsyncSessionLocal()
 
         try:
@@ -330,21 +321,13 @@ class UserManager(AsyncModelManager):
         """Create a user with hashed password."""
         from .auth import get_password_hash
 
-        user = await self.create(
-            email=email,
-            hashed_password=get_password_hash(password),
-            **kwargs
-        )
+        user = await self.create(email=email, hashed_password=get_password_hash(password), **kwargs)
         return user
 
     async def create_superuser(self, email: str, password: str, **kwargs):
         """Create a superuser."""
         return await self.create_user(
-            email=email,
-            password=password,
-            is_superuser=True,
-            is_active=True,
-            **kwargs
+            email=email, password=password, is_superuser=True, is_active=True, **kwargs
         )
 
     async def get_by_email(self, email: str):

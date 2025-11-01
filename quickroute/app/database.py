@@ -8,6 +8,7 @@ engine = create_async_engine(settings.DATABASE_URL, future=True, echo=settings.D
 # Async session factory
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
+
 # Base class for models
 class Base(DeclarativeBase):
     pass

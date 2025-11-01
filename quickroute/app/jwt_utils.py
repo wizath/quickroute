@@ -15,15 +15,11 @@ def create_access_token(user_id: int) -> dict:
         "jti": jti,
         "type": "access",
         "exp": expires,
-        "iat": datetime.utcnow()
+        "iat": datetime.utcnow(),
     }
 
     token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return {
-        "token": token,
-        "jti": jti,
-        "expires_at": expires
-    }
+    return {"token": token, "jti": jti, "expires_at": expires}
 
 
 def create_refresh_token(user_id: int) -> dict:
@@ -36,25 +32,17 @@ def create_refresh_token(user_id: int) -> dict:
         "jti": jti,
         "type": "refresh",
         "exp": expires,
-        "iat": datetime.utcnow()
+        "iat": datetime.utcnow(),
     }
 
     token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return {
-        "token": token,
-        "jti": jti,
-        "expires_at": expires
-    }
+    return {"token": token, "jti": jti, "expires_at": expires}
 
 
 def decode_token(token: str) -> Optional[dict]:
     """Decode and verify JWT token"""
     try:
-        payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         return None

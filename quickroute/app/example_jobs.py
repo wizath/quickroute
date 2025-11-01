@@ -56,7 +56,7 @@ async def generate_user_statistics():
             "active_users": active_users,
             "superusers": superusers,
             "inactive_users": total_users - active_users,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         logger.info(f"User statistics: {stats}")
@@ -70,10 +70,7 @@ async def daily_health_check():
 
     Runs once per day to verify system health and log any issues.
     """
-    health_status = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "checks": {}
-    }
+    health_status = {"timestamp": datetime.utcnow().isoformat(), "checks": {}}
 
     try:
         async with AsyncSessionLocal() as session:
@@ -84,24 +81,26 @@ async def daily_health_check():
         logger.error(f"Database health check failed: {e}")
 
     from .jobs import job_registry
+
     try:
         total_jobs = len(job_registry.list_jobs())
         enabled_jobs = len([j for j in job_registry.list_jobs() if j.enabled])
         health_status["checks"]["jobs"] = {
             "status": "OK",
             "total_jobs": total_jobs,
-            "enabled_jobs": enabled_jobs
+            "enabled_jobs": enabled_jobs,
         }
     except Exception as e:
         health_status["checks"]["jobs"] = f"ERROR: {str(e)}"
 
     try:
         import psutil
+
         memory_info = psutil.virtual_memory()
         health_status["checks"]["memory"] = {
             "status": "OK",
             "used_percent": memory_info.percent,
-            "available_gb": round(memory_info.available / (1024**3), 2)
+            "available_gb": round(memory_info.available / (1024**3), 2),
         }
 
         if memory_info.percent > 90:
@@ -138,7 +137,7 @@ async def cleanup_old_logs():
     # Restore original max history
     job_registry.max_history = original_max
 
-    return {"cleaned_records": removed_count if 'removed_count' in locals() else 0}
+    return {"cleaned_records": removed_count if "removed_count" in locals() else 0}
 
 
 @periodic("weekly", name="database_maintenance")
@@ -176,10 +175,7 @@ async def database_maintenance():
         maintenance_tasks.append(error_msg)
         logger.error(error_msg)
 
-    return {
-        "tasks_completed": maintenance_tasks,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"tasks_completed": maintenance_tasks, "timestamp": datetime.utcnow().isoformat()}
 
 
 @periodic("2h", name="cleanup_inactive_sessions", timeout=60)
@@ -195,10 +191,7 @@ async def cleanup_inactive_sessions():
     # For now, we'll just log that this task ran
     logger.info("Session cleanup task completed")
 
-    return {
-        "message": "Session cleanup completed",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"message": "Session cleanup completed", "timestamp": datetime.utcnow().isoformat()}
 
 
 # Example of a job that could send notifications
@@ -210,6 +203,7 @@ async def send_daily_report():
     This would typically send an email or notification with daily statistics.
     """
     from .jobs import job_scheduler
+
     user_stats = await job_scheduler.run_job_now("user_statistics")
 
     # Format report

@@ -19,13 +19,17 @@ class MaintenanceMiddleware(MiddlewareMixin):
 
         if maintenance_mode:
             # Allow admin users during maintenance
-            if hasattr(request.state, 'user') and request.state.user and request.state.user.is_superuser:
+            if (
+                hasattr(request.state, "user")
+                and request.state.user
+                and request.state.user.is_superuser
+            ):
                 return None
 
             return Response(
                 content="<h1>Site Under Maintenance</h1><p>We'll be back soon!</p>",
                 status_code=503,
-                media_type="text/html"
+                media_type="text/html",
             )
 
         return None
@@ -52,12 +56,13 @@ class APIThrottlingMiddleware(MiddlewareMixin):
             requests_this_minute = len(self.request_counts[client_ip])
             if requests_this_minute >= 100:
                 from fastapi.responses import JSONResponse
+
                 return JSONResponse(
                     status_code=429,
                     content={
                         "error": "Rate limit exceeded",
-                        "message": "Too many requests. Please try again later."
-                    }
+                        "message": "Too many requests. Please try again later.",
+                    },
                 )
 
         # Record this request
@@ -85,8 +90,7 @@ class APIThrottlingMiddleware(MiddlewareMixin):
         for ip in list(self.request_counts.keys()):
             # Keep only requests within the last minute
             self.request_counts[ip] = [
-                req_time for req_time in self.request_counts[ip]
-                if req_time > cutoff_time
+                req_time for req_time in self.request_counts[ip] if req_time > cutoff_time
             ]
 
             if not self.request_counts[ip]:
@@ -111,7 +115,7 @@ class RequestLoggingMiddleware(MiddlewareMixin):
 
     async def process_response(self, request: Request, response: Response) -> Response:
         # Calculate processing time
-        if hasattr(request.state, 'start_time'):
+        if hasattr(request.state, "start_time"):
             processing_time = time.time() - request.state.start_time
             response.headers["X-Processing-Time"] = f"{processing_time:.3f}s"
 
@@ -144,9 +148,9 @@ class CacheControlMiddleware(MiddlewareMixin):
     """
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if request.url.path.startswith('/static/') or request.url.path.startswith('/media/'):
+        if request.url.path.startswith("/static/") or request.url.path.startswith("/media/"):
             response.headers["Cache-Control"] = "public, max-age=3600"  # 1 hour
-        elif request.url.path.endswith(('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg')):
+        elif request.url.path.endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg")):
             response.headers["Cache-Control"] = "public, max-age=86400"  # 1 day
         else:
             # No caching for API responses
@@ -165,12 +169,12 @@ class ConditionalMiddleware(MiddlewareMixin):
 
     async def process_request(self, request: Request) -> None:
         # Only log requests from specific user agents
-        user_agent = request.headers.get('user-agent', '')
-        if 'bot' in user_agent.lower() or 'crawler' in user_agent.lower():
+        user_agent = request.headers.get("user-agent", "")
+        if "bot" in user_agent.lower() or "crawler" in user_agent.lower():
             logger.info(f"🤖 Bot detected: {user_agent}")
 
     async def process_response(self, request: Request, response: Response) -> Response:
-        if request.url.path.startswith('/api/'):
+        if request.url.path.startswith("/api/"):
             response.headers["X-API-Version"] = "1.0.0"
             response.headers["X-Powered-By"] = "QuickRoute"
 

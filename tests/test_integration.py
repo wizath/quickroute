@@ -12,8 +12,6 @@ Tests the full application flow including:
 """
 
 import pytest
-import asyncio
-import os
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -21,7 +19,6 @@ from sqlalchemy.pool import StaticPool
 
 from quickroute import QuickRoute, User, create_access_token, verify_password
 from quickroute.app.database import Base, get_async_session
-from quickroute.app.settings import TestingSettings
 
 
 @pytest.mark.integration
@@ -73,16 +70,14 @@ class TestDatabaseIntegration:
     @pytest.mark.asyncio
     async def test_sqlite_database_connection(self):
         """Test SQLite database connection."""
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
         # Test connection is working
         from sqlalchemy import text
+
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             assert result.scalar() == 1
@@ -93,10 +88,7 @@ class TestDatabaseIntegration:
     async def test_user_model_crud(self):
         """Test User model CRUD operations."""
         # Create in-memory database
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -106,11 +98,12 @@ class TestDatabaseIntegration:
         async with SessionLocal() as session:
             # Create user
             from quickroute.app.auth import get_password_hash
+
             user = User(
                 email="test@example.com",
                 hashed_password=get_password_hash("password123"),
                 is_active=True,
-                is_superuser=False
+                is_superuser=False,
             )
             session.add(user)
             await session.commit()
@@ -121,6 +114,7 @@ class TestDatabaseIntegration:
 
             # Read user
             from sqlalchemy import select
+
             result = await session.execute(select(User).where(User.email == "test@example.com"))
             found_user = result.scalar_one_or_none()
 
@@ -155,17 +149,13 @@ class TestAPIIntegration:
     async def test_authentication_flow(self):
         """Test complete authentication flow."""
         from fastapi import Depends, HTTPException
-        from quickroute.app.database import get_async_session
         from sqlalchemy.ext.asyncio import AsyncSession
         from sqlalchemy import select
 
         # Setup test app and database
         app = QuickRoute(title="Test App")
 
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -182,11 +172,12 @@ class TestAPIIntegration:
         # Create test user
         async with SessionLocal() as session:
             from quickroute.app.auth import get_password_hash
+
             user = User(
                 email="testuser@example.com",
                 hashed_password=get_password_hash("testpass123"),
                 is_active=True,
-                is_superuser=False
+                is_superuser=False,
             )
             session.add(user)
             await session.commit()
@@ -208,11 +199,11 @@ class TestAPIIntegration:
 
         # Test with client
         from httpx import ASGITransport
+
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Test login
             response = await client.post(
-                "/login",
-                params={"email": "testuser@example.com", "password": "testpass123"}
+                "/login", params={"email": "testuser@example.com", "password": "testpass123"}
             )
 
             assert response.status_code == 200
@@ -222,8 +213,7 @@ class TestAPIIntegration:
 
             # Test invalid credentials
             response = await client.post(
-                "/login",
-                params={"email": "testuser@example.com", "password": "wrongpass"}
+                "/login", params={"email": "testuser@example.com", "password": "wrongpass"}
             )
 
             assert response.status_code == 401
@@ -234,7 +224,6 @@ class TestAPIIntegration:
     async def test_protected_endpoint(self):
         """Test protected endpoint with JWT."""
         from fastapi import Depends, Header, HTTPException
-        from quickroute.app.database import get_async_session
         from quickroute.app.jwt_utils import decode_token
         from sqlalchemy import select
         from sqlalchemy.ext.asyncio import AsyncSession
@@ -242,10 +231,7 @@ class TestAPIIntegration:
         app = QuickRoute(title="Test App")
 
         # Setup database
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -261,10 +247,11 @@ class TestAPIIntegration:
         # Create user
         async with SessionLocal() as session:
             from quickroute.app.auth import get_password_hash
+
             user = User(
                 email="protected@example.com",
                 hashed_password=get_password_hash("pass123"),
-                is_active=True
+                is_active=True,
             )
             session.add(user)
             await session.commit()
@@ -274,8 +261,7 @@ class TestAPIIntegration:
         # Add protected endpoint
 
         async def get_current_user(
-            authorization: str = Header(None),
-            db: AsyncSession = Depends(get_async_session)
+            authorization: str = Header(None), db: AsyncSession = Depends(get_async_session)
         ):
             if not authorization or not authorization.startswith("Bearer "):
                 raise HTTPException(status_code=401)
@@ -301,15 +287,13 @@ class TestAPIIntegration:
 
         # Test
         from httpx import ASGITransport
+
         token_data = create_access_token(user_id)
         token = token_data["token"]
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Test with valid token
-            response = await client.get(
-                "/protected",
-                headers={"Authorization": f"Bearer {token}"}
-            )
+            response = await client.get("/protected", headers={"Authorization": f"Bearer {token}"})
 
             assert response.status_code == 200
             data = response.json()
@@ -322,8 +306,7 @@ class TestAPIIntegration:
 
             # Test with invalid token
             response = await client.get(
-                "/protected",
-                headers={"Authorization": "Bearer invalid_token"}
+                "/protected", headers={"Authorization": "Bearer invalid_token"}
             )
             assert response.status_code == 401
 
@@ -338,13 +321,9 @@ class TestAuthenticationIntegration:
     @pytest.mark.asyncio
     async def test_user_registration_and_login(self):
         """Test complete user registration and login flow."""
-        from quickroute.app.managers import UserManager
 
         # Setup database
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -359,7 +338,7 @@ class TestAuthenticationIntegration:
             user = User(
                 email="newuser@example.com",
                 hashed_password=get_password_hash("securepass123"),
-                is_active=True
+                is_active=True,
             )
             session.add(user)
             await session.commit()
@@ -392,10 +371,7 @@ class TestModelManagerIntegration:
     async def test_user_objects_manager(self):
         """Test User.objects manager methods."""
         # Setup database
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -411,7 +387,7 @@ class TestModelManagerIntegration:
                     email=f"user{i}@example.com",
                     hashed_password=get_password_hash(f"pass{i}"),
                     is_active=i % 2 == 0,  # Alternate active/inactive
-                    is_superuser=i == 0  # First user is superuser
+                    is_superuser=i == 0,  # First user is superuser
                 )
                 session.add(user)
 
@@ -419,16 +395,13 @@ class TestModelManagerIntegration:
 
             # Test filtering
             from sqlalchemy import select
-            result = await session.execute(
-                select(User).where(User.is_active == True)
-            )
+
+            result = await session.execute(select(User).where(User.is_active))
             active_users = result.scalars().all()
             assert len(active_users) == 3  # Users 0, 2, 4
 
             # Test superuser query
-            result = await session.execute(
-                select(User).where(User.is_superuser == True)
-            )
+            result = await session.execute(select(User).where(User.is_superuser))
             superusers = result.scalars().all()
             assert len(superusers) == 1
             assert superusers[0].email == "user0@example.com"
@@ -451,29 +424,29 @@ class TestFullApplicationFlow:
         from fastapi import Depends, HTTPException, Header
         from sqlalchemy import select, text
         from sqlalchemy.ext.asyncio import AsyncSession
-        from quickroute.app.database import get_async_session
         from quickroute.app.jwt_utils import decode_token
 
         app = QuickRoute(title="Blog API")
 
         # Setup database
-        engine = create_async_engine(
-            "sqlite+aiosqlite:///:memory:",
-            poolclass=StaticPool
-        )
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:", poolclass=StaticPool)
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
             # Create posts table
-            await conn.execute(text("""
+            await conn.execute(
+                text(
+                    """
                 CREATE TABLE IF NOT EXISTS posts (
                     id INTEGER PRIMARY KEY,
                     title TEXT NOT NULL,
                     content TEXT NOT NULL,
                     author_id INTEGER NOT NULL
                 )
-            """))
+            """
+                )
+            )
 
         SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -486,7 +459,9 @@ class TestFullApplicationFlow:
         # Add endpoints
 
         @app.post("/register")
-        async def register(email: str, password: str, db: AsyncSession = Depends(get_async_session)):
+        async def register(
+            email: str, password: str, db: AsyncSession = Depends(get_async_session)
+        ):
             # Check if user exists
             result = await db.execute(select(User).where(User.email == email))
             if result.scalar_one_or_none():
@@ -494,11 +469,8 @@ class TestFullApplicationFlow:
 
             # Create user
             from quickroute.app.auth import get_password_hash
-            user = User(
-                email=email,
-                hashed_password=get_password_hash(password),
-                is_active=True
-            )
+
+            user = User(email=email, hashed_password=get_password_hash(password), is_active=True)
             db.add(user)
             await db.commit()
             await db.refresh(user)
@@ -517,8 +489,7 @@ class TestFullApplicationFlow:
             return {"access_token": token_data["token"]}
 
         async def get_current_user(
-            authorization: str = Header(None),
-            db: AsyncSession = Depends(get_async_session)
+            authorization: str = Header(None), db: AsyncSession = Depends(get_async_session)
         ):
             if not authorization or not authorization.startswith("Bearer "):
                 raise HTTPException(401)
@@ -544,11 +515,13 @@ class TestFullApplicationFlow:
             title: str,
             content: str,
             current_user: User = Depends(get_current_user),
-            db: AsyncSession = Depends(get_async_session)
+            db: AsyncSession = Depends(get_async_session),
         ):
             result = await db.execute(
-                text("INSERT INTO posts (title, content, author_id) VALUES (:title, :content, :author_id) RETURNING id"),
-                {"title": title, "content": content, "author_id": current_user.id}
+                text(
+                    "INSERT INTO posts (title, content, author_id) VALUES (:title, :content, :author_id) RETURNING id"
+                ),
+                {"title": title, "content": content, "author_id": current_user.id},
             )
             await db.commit()
             post_id = result.scalar()
@@ -563,18 +536,17 @@ class TestFullApplicationFlow:
 
         # Test complete flow
         from httpx import ASGITransport
+
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # 1. Register user
             response = await client.post(
-                "/register",
-                params={"email": "blogger@example.com", "password": "blog123"}
+                "/register", params={"email": "blogger@example.com", "password": "blog123"}
             )
             assert response.status_code == 200
 
             # 2. Login
             response = await client.post(
-                "/login",
-                params={"email": "blogger@example.com", "password": "blog123"}
+                "/login", params={"email": "blogger@example.com", "password": "blog123"}
             )
             assert response.status_code == 200
             token = response.json()["access_token"]
@@ -583,7 +555,7 @@ class TestFullApplicationFlow:
             response = await client.post(
                 "/posts",
                 params={"title": "My First Post", "content": "Hello World"},
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {token}"},
             )
             assert response.status_code == 200
             assert response.json()["title"] == "My First Post"

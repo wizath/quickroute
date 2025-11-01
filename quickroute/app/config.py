@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite"
     SECRET_KEY: str = "replace-with-secure-key"
@@ -14,5 +15,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()

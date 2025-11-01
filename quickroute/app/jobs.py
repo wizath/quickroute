@@ -7,16 +7,15 @@ Decorator-based job registration with async execution support.
 import asyncio
 import inspect
 from datetime import datetime, timedelta
-from typing import Callable, Dict, List, Optional, Any, Union
+from typing import Callable, Dict, List, Optional, Any
 from enum import Enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from .logging import logger
-from .models import User
-from .database import AsyncSessionLocal
 
 
 class JobStatus(Enum):
     """Job execution status."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -27,6 +26,7 @@ class JobStatus(Enum):
 @dataclass
 class JobResult:
     """Result of a job execution."""
+
     status: JobStatus
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -38,6 +38,7 @@ class JobResult:
 @dataclass
 class Job:
     """Periodic job definition."""
+
     name: str
     func: Callable
     schedule: str  # Cron-like expression or interval
@@ -94,19 +95,19 @@ class JobRegistry:
     def record_execution(self, job_name: str, result: JobResult):
         """Record a job execution result."""
         history_entry = {
-            'job_name': job_name,
-            'status': result.status.value,
-            'started_at': result.started_at,
-            'completed_at': result.completed_at,
-            'error': result.error,
-            'execution_time': result.execution_time,
-            'timestamp': datetime.utcnow()
+            "job_name": job_name,
+            "status": result.status.value,
+            "started_at": result.started_at,
+            "completed_at": result.completed_at,
+            "error": result.error,
+            "execution_time": result.execution_time,
+            "timestamp": datetime.utcnow(),
         }
 
         self.job_history.append(history_entry)
 
         if len(self.job_history) > self.max_history:
-            self.job_history = self.job_history[-self.max_history:]
+            self.job_history = self.job_history[-self.max_history :]
 
         if job_name in self.jobs:
             job = self.jobs[job_name]
@@ -144,15 +145,12 @@ def periodic(schedule: str, name: Optional[str] = None, **kwargs):
         def process_queue():
             pass
     """
+
     def decorator(func: Callable) -> Callable:
         job_name = name or func.__name__
 
         job = Job(
-            name=job_name,
-            func=func,
-            schedule=schedule,
-            description=func.__doc__ or "",
-            **kwargs
+            name=job_name, func=func, schedule=schedule, description=func.__doc__ or "", **kwargs
         )
 
         job_registry.register(job)
@@ -282,23 +280,16 @@ class JobScheduler:
         job.is_running = True
         started_at = datetime.utcnow()
 
-        result = JobResult(
-            status=JobStatus.RUNNING,
-            started_at=started_at
-        )
+        result = JobResult(status=JobStatus.RUNNING, started_at=started_at)
 
         logger.info(f"Running job: {job.name}")
 
         try:
             if inspect.iscoroutinefunction(job.func):
-                job_result = await asyncio.wait_for(
-                    job.func(),
-                    timeout=job.timeout
-                )
+                job_result = await asyncio.wait_for(job.func(), timeout=job.timeout)
             else:
                 job_result = await asyncio.wait_for(
-                    asyncio.to_thread(job.func),
-                    timeout=job.timeout
+                    asyncio.to_thread(job.func), timeout=job.timeout
                 )
 
             completed_at = datetime.utcnow()
@@ -309,7 +300,7 @@ class JobScheduler:
                 started_at=started_at,
                 completed_at=completed_at,
                 result=job_result,
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
             logger.info(f"Job '{job.name}' completed successfully in {execution_time:.2f}s")
@@ -320,7 +311,7 @@ class JobScheduler:
                 status=JobStatus.FAILED,
                 started_at=started_at,
                 completed_at=completed_at,
-                error="Job timed out"
+                error="Job timed out",
             )
             logger.error(f"Job '{job.name}' timed out after {job.timeout} seconds")
 
@@ -330,7 +321,7 @@ class JobScheduler:
                 status=JobStatus.FAILED,
                 started_at=started_at,
                 completed_at=completed_at,
-                error=str(e)
+                error=str(e),
             )
             logger.error(f"Job '{job.name}' failed: {e}")
 
@@ -362,19 +353,23 @@ class JobScheduler:
             return None
 
         return {
-            'name': job.name,
-            'enabled': job.enabled,
-            'is_running': job.is_running,
-            'last_run': job.last_run.isoformat() if job.last_run else None,
-            'next_run': job.next_run.isoformat() if job.next_run else None,
-            'run_count': job.run_count,
-            'failure_count': job.failure_count,
-            'schedule': job.schedule,
-            'last_result': {
-                'status': job.last_result.status.value if job.last_result else None,
-                'error': job.last_result.error,
-                'execution_time': job.last_result.execution_time
-            } if job.last_result else None
+            "name": job.name,
+            "enabled": job.enabled,
+            "is_running": job.is_running,
+            "last_run": job.last_run.isoformat() if job.last_run else None,
+            "next_run": job.next_run.isoformat() if job.next_run else None,
+            "run_count": job.run_count,
+            "failure_count": job.failure_count,
+            "schedule": job.schedule,
+            "last_result": (
+                {
+                    "status": job.last_result.status.value if job.last_result else None,
+                    "error": job.last_result.error,
+                    "execution_time": job.last_result.execution_time,
+                }
+                if job.last_result
+                else None
+            ),
         }
 
 
