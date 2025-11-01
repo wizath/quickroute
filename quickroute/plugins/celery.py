@@ -1,9 +1,11 @@
 """
 Celery plugin for QuickRoute.
 
-Re-exports CeleryPlugin from internal implementation.
+Convention: exports 'Plugin' class.
 """
 
 from ..app.plugins.celery_plugin import CeleryPlugin
 
-__all__ = ['CeleryPlugin']
+Plugin = CeleryPlugin
+
+__all__ = ['Plugin', 'CeleryPlugin']

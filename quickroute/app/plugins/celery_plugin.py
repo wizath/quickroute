@@ -19,17 +19,8 @@ class CeleryPlugin(BasePlugin):
     to synchronous execution when Celery is not available.
     """
 
-    @property
-    def name(self) -> str:
-        return "celery"
-
-    @property
-    def description(self) -> str:
-        return "Distributed task processing with Celery"
-
-    @property
-    def version(self) -> str:
-        return "1.0.0"
+    name = "celery"
+    version = "1.0.0"
 
     def __init__(self, settings):
         super().__init__(settings)
@@ -252,20 +243,6 @@ class CeleryPlugin(BasePlugin):
                    if not name.startswith('celery.')}
         return self._task_registry
 
-    def get_status(self) -> Dict[str, Any]:
-        """Get comprehensive plugin status."""
-        base_status = super().get_status()
-
-        if self.initialized and self.celery_app:
-            celery_status = {
-                'broker_url': self.celery_app.conf.broker_url,
-                'result_backend': self.celery_app.conf.result_backend,
-                'registered_tasks': len(self.list_tasks()),
-                'worker_concurrency': getattr(self.settings, 'CELERY_WORKER_CONCURRENCY', 4),
-            }
-            base_status.update(celery_status)
-
-        return base_status
 
 
 import functools

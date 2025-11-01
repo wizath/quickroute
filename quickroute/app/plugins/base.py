@@ -2,137 +2,45 @@
 Base plugin system for QuickRoute.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 import importlib
+import asyncio
 from ..logging import logger
 
 
-class BasePlugin(ABC):
+class BasePlugin:
     """
     Base class for all QuickRoute plugins.
 
     Plugins listed in INSTALLED_PLUGINS are automatically loaded and initialized.
     """
 
+    name: str = None  # Plugin name (required)
+    version: str = "1.0.0"  # Plugin version
+
     def __init__(self, settings):
         self.settings = settings
         self.initialized = False
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Plugin name."""
-        pass
-
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        """Plugin description."""
-        pass
-
-    @property
-    @abstractmethod
-    def version(self) -> str:
-        """Plugin version."""
-        pass
-
-    @abstractmethod
     def is_available(self) -> bool:
         """
         Check if plugin dependencies are available.
 
         Returns True if plugin can be initialized, False otherwise.
         """
-        pass
+        return True
 
-    @abstractmethod
-    def initialize(self) -> bool:
+    def initialize(self):
         """
-        Initialize the plugin.
+        Initialize the plugin. Can be sync or async.
 
         Returns True if initialization successful, False otherwise.
         """
-        pass
+        return True
 
-    @abstractmethod
     def shutdown(self):
-        """Cleanup and shutdown the plugin."""
+        """Cleanup and shutdown the plugin. Can be sync or async."""
         pass
-
-    async def async_initialize(self) -> bool:
-        """
-        Async initialization hook.
-
-        Override this for plugins that need async initialization.
-        Defaults to calling synchronous initialize().
-        """
-        return self.initialize()
-
-    async def async_shutdown(self):
-        """
-        Async shutdown hook.
-
-        Override this for plugins that need async cleanup.
-        Defaults to calling synchronous shutdown().
-        """
-        self.shutdown()
-
-    def ready(self):
-        """
-        Called after plugin initialization completes.
-
-        Override this to perform post-initialization tasks like:
-        - Signal registration
-        - Setting up dependencies with other plugins
-        - Registering routes or middleware
-        """
-        pass
-
-    @classmethod
-    def auto_discover(cls, module_path: str) -> Optional[Type['BasePlugin']]:
-        """
-        Auto-discover plugin class in a module.
-
-        Looks for a BasePlugin subclass in the given module path.
-        Returns the first BasePlugin subclass found, or None.
-        """
-        try:
-            module = importlib.import_module(module_path)
-
-            for attr_name in dir(module):
-                attr = getattr(module, attr_name)
-
-                if (isinstance(attr, type) and
-                    issubclass(attr, BasePlugin) and
-                    attr != BasePlugin and
-                    not attr.__name__.startswith('_')):
-                    return attr
-
-            logger.warning(f"No plugin class found in module: {module_path}")
-            return None
-
-        except ImportError as e:
-            logger.error(f"Failed to import plugin module {module_path}: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Error discovering plugin in {module_path}: {e}")
-            return None
-
-    def get_status(self) -> Dict[str, Any]:
-        """
-        Get plugin status information.
-
-        Returns:
-            Dictionary with plugin status details.
-        """
-        return {
-            'name': self.name,
-            'description': self.description,
-            'version': self.version,
-            'initialized': self.initialized,
-            'available': self.is_available(),
-        }
 
     def __str__(self):
         return f"{self.name} v{self.version} ({'initialized' if self.initialized else 'not initialized'})"
@@ -145,46 +53,14 @@ class PluginManager:
     """
     Manager for all QuickRoute plugins.
 
-    Loads plugins from INSTALLED_PLUGINS setting (Django-style).
+    Loads plugins from INSTALLED_PLUGINS setting.
+    Convention: plugin modules must export 'Plugin' class.
     """
 
     def __init__(self, settings):
         self.settings = settings
         self.plugins: Dict[str, BasePlugin] = {}
         self._load_installed_plugins()
-
-    def _resolve_plugin_class(self, plugin_path: str) -> Optional[Type[BasePlugin]]:
-        """
-        Resolve plugin class from path.
-
-        Supports two formats:
-        1. 'module.path' - Auto-discovers plugin class in module
-        2. 'module.path.PluginClass' - Direct class reference
-        """
-        if '.' not in plugin_path:
-            logger.error(f"Invalid plugin path: {plugin_path}")
-            return None
-
-        parts = plugin_path.split('.')
-        last_part = parts[-1]
-
-        if last_part[0].isupper():
-            try:
-                module_path = '.'.join(parts[:-1])
-                module = importlib.import_module(module_path)
-                plugin_class = getattr(module, last_part)
-
-                if isinstance(plugin_class, type) and issubclass(plugin_class, BasePlugin):
-                    return plugin_class
-                else:
-                    logger.error(f"{plugin_path} is not a BasePlugin subclass")
-                    return None
-
-            except (ImportError, AttributeError) as e:
-                logger.error(f"Failed to import plugin class {plugin_path}: {e}")
-                return None
-        else:
-            return BasePlugin.auto_discover(plugin_path)
 
     def _load_installed_plugins(self):
         """Load plugins from INSTALLED_PLUGINS setting."""
@@ -198,22 +74,37 @@ class PluginManager:
 
         for plugin_path in installed:
             try:
-                plugin_class = self._resolve_plugin_class(plugin_path)
+                # Import module
+                module = importlib.import_module(plugin_path)
 
-                if plugin_class:
-                    plugin = plugin_class(self.settings)
-                    self.register(plugin)
+                # Get Plugin class (convention)
+                if not hasattr(module, 'Plugin'):
+                    logger.error(f"Module {plugin_path} does not export 'Plugin' class")
+                    continue
 
-                    if not plugin.is_available():
-                        logger.error(f"Plugin {plugin.name} dependencies not available")
-                        continue
+                plugin_class = module.Plugin
 
-                    if plugin.initialize():
-                        plugin.initialized = True
-                        plugin.ready()
-                        logger.info(f"Plugin {plugin.name} initialized and ready")
-                    else:
-                        logger.error(f"Plugin {plugin.name} failed to initialize")
+                # Instantiate
+                plugin = plugin_class(self.settings)
+                self.register(plugin)
+
+                # Check availability
+                if not plugin.is_available():
+                    logger.error(f"Plugin {plugin.name} dependencies not available")
+                    continue
+
+                # Initialize (handle both sync and async)
+                result = plugin.initialize()
+                if asyncio.iscoroutinefunction(plugin.initialize):
+                    # Async initialize - run in event loop
+                    loop = asyncio.get_event_loop()
+                    result = loop.run_until_complete(result)
+
+                if result:
+                    plugin.initialized = True
+                    logger.info(f"Plugin {plugin.name} initialized")
+                else:
+                    logger.error(f"Plugin {plugin.name} failed to initialize")
 
             except Exception as e:
                 logger.error(f"Error loading plugin {plugin_path}: {e}")
@@ -240,33 +131,20 @@ class PluginManager:
         return [p for p in self.plugins.values() if p.initialized]
 
     async def shutdown_all(self):
-        """Shutdown all plugins asynchronously."""
+        """Shutdown all plugins (handles both sync and async)."""
         for plugin in self.plugins.values():
             if plugin.initialized:
                 try:
-                    await plugin.async_shutdown()
+                    # Handle both sync and async shutdown
+                    if asyncio.iscoroutinefunction(plugin.shutdown):
+                        await plugin.shutdown()
+                    else:
+                        plugin.shutdown()
+
                     plugin.initialized = False
                     logger.info(f"Plugin {plugin.name} shutdown")
                 except Exception as e:
                     logger.error(f"Error shutting down plugin {plugin.name}: {e}")
-
-    def shutdown_all_sync(self):
-        """Shutdown all plugins synchronously."""
-        for plugin in self.plugins.values():
-            if plugin.initialized:
-                try:
-                    plugin.shutdown()
-                    plugin.initialized = False
-                except Exception as e:
-                    logger.error(f"Error shutting down plugin {plugin.name}: {e}")
-
-    def get_status_report(self) -> Dict[str, Any]:
-        """Get comprehensive status report for all plugins."""
-        return {
-            'total_plugins': len(self.plugins),
-            'initialized_plugins': len(self.get_initialized_plugins()),
-            'plugins': {name: plugin.get_status() for name, plugin in self.plugins.items()}
-        }
 
 
 # Global plugin manager instance
