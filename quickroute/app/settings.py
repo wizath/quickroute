@@ -155,12 +155,15 @@ class BaseSettings:
     CSRF_COOKIE_HTTPONLY = True
     CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if os.getenv('CSRF_TRUSTED_ORIGINS') else []
 
+    # Plugin System
+    INSTALLED_PLUGINS = [
+        'quickroute.plugins.celery',
+    ]
+
+    # Celery Configuration
     CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
     CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-    USE_CELERY = os.getenv('USE_CELERY', 'True').lower() == 'true'
-    USE_CELERY_BEAT = os.getenv('USE_CELERY_BEAT', 'False').lower() == 'true'
     CELERY_SETTINGS_MODULE = os.getenv('CELERY_SETTINGS_MODULE', None)
-
     CELERY_WORKER_CONCURRENCY = int(os.getenv('CELERY_WORKER_CONCURRENCY', '4'))
     CELERY_WORKER_PREFETCH_MULTIPLIER = int(os.getenv('CELERY_WORKER_PREFETCH_MULTIPLIER', '1'))
     CELERY_TASK_ACKS_LATE = os.getenv('CELERY_TASK_ACKS_LATE', 'True').lower() == 'true'

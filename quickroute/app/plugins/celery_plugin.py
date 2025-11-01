@@ -105,7 +105,7 @@ class CeleryPlugin(BasePlugin):
 
             self._fallback_registry[task_name] = func
 
-            if self.enabled and self.celery_app:
+            if self.initialized and self.celery_app:
                 task = self.celery_app.task(
                     name=task_name,
                     bind=bind,
@@ -166,7 +166,7 @@ class CeleryPlugin(BasePlugin):
         This is the key function that allows async/await pattern with Celery.
         Blocks until the Celery task completes, making it behave like a regular async function.
         """
-        if not self.enabled or not self.celery_app:
+        if not self.initialized or not self.celery_app:
             # Fallback: execute directly
             if hasattr(task, '_fallback_func'):
                 func = task._fallback_func
@@ -206,7 +206,7 @@ class CeleryPlugin(BasePlugin):
 
     def get_task_status(self, task_result: Any) -> dict:
         """Get status information for a Celery task."""
-        if not self.enabled or not self.celery_app:
+        if not self.initialized or not self.celery_app:
             return {
                 'celery_available': False,
                 'status': 'fallback_executed',
@@ -256,7 +256,7 @@ class CeleryPlugin(BasePlugin):
         """Get comprehensive plugin status."""
         base_status = super().get_status()
 
-        if self.enabled and self.celery_app:
+        if self.initialized and self.celery_app:
             celery_status = {
                 'broker_url': self.celery_app.conf.broker_url,
                 'result_backend': self.celery_app.conf.result_backend,

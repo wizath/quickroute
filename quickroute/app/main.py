@@ -18,12 +18,12 @@ from .middleware import load_middleware
 from .router import Router
 from .routers import auth, users
 from .example_jobs import *  # Import all example jobs to register them
-from .plugins import initialize_plugins
+from .plugins import get_plugin_manager
 
 app = FastAPI(title=settings.QUICKROUTE_TITLE, description=settings.QUICKROUTE_DESCRIPTION, version=settings.QUICKROUTE_VERSION)
 
-plugin_manager = initialize_plugins(settings)
-logger.info(f"Initialized {len(plugin_manager.get_enabled_plugins())} plugins")
+plugin_manager = get_plugin_manager(settings)
+logger.info(f"Initialized {len(plugin_manager.get_initialized_plugins())} plugins")
 
 from .websocket import get_websocket_manager
 from .websocket.middleware import initialize_default_websocket_middleware
