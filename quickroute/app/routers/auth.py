@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from ..dependencies import get_session
 from ..models import User, BlacklistedToken
-from ..auth import verify_password
-from ..jwt_utils import create_access_token, create_refresh_token, decode_token, verify_token_type
+from ..auth.password import verify_password
+from ..auth.jwt import create_access_token, create_refresh_token, decode_token, verify_token_type
 from ..exceptions import AuthenticationError, TokenError
-from ..logging import logger
+from quickroute.logging import logger
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")

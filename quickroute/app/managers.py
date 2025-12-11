@@ -1,4 +1,6 @@
 from typing import Any, Dict, List, Optional, Type, TypeVar, TYPE_CHECKING
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
@@ -7,6 +9,9 @@ if TYPE_CHECKING:
     pass
 
 T = TypeVar("T", bound=DeclarativeBase)
+
+# Context variable to hold the current transaction session
+_current_session: ContextVar[Optional[AsyncSession]] = ContextVar("current_session", default=None)
 
 
 class AsyncModelManager:
@@ -36,10 +41,56 @@ class AsyncModelManager:
         return self
 
     def _get_session(self) -> AsyncSession:
-        """Get database session - can be overridden for different session strategies"""
+        """Get database session - uses transaction session if available"""
+        # Check if we're inside a transaction context
+        session = _current_session.get()
+        if session is not None:
+            return session
+
         from .database import AsyncSessionLocal
 
         return AsyncSessionLocal()
+
+    def _is_in_transaction(self) -> bool:
+        """Check if we're inside a transaction context"""
+        return _current_session.get() is not None
+
+    @asynccontextmanager
+    async def _session_scope(self):
+        """
+        Internal helper for session management.
+        Uses transaction session if available, otherwise creates new session.
+        """
+        if self._is_in_transaction():
+            yield self._get_session()
+        else:
+            async with self._get_session() as session:
+                yield session
+
+    @asynccontextmanager
+    async def transaction(self):
+        """
+        Transaction context manager for grouping multiple operations.
+
+        Usage:
+            async with User.objects.transaction():
+                user = await User.objects.create(email="test@example.com", ...)
+                await Profile.objects.create(user_id=user.id, ...)
+                # Both operations use the same session and transaction
+                # Commits on success, rollbacks on exception
+        """
+        from .database import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as session:
+            token = _current_session.set(session)
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                _current_session.reset(token)
 
     async def get(self, **kwargs) -> Optional[T]:
         """
@@ -49,7 +100,7 @@ class AsyncModelManager:
         Raises:
             sqlalchemy.orm.exc.MultipleResultsFound: if multiple results found
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(select(self.model_class).filter_by(**kwargs))
             return result.scalar_one_or_none()
 
@@ -58,7 +109,7 @@ class AsyncModelManager:
         filter() method.
         Returns list of instances matching criteria.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(select(self.model_class).filter_by(**kwargs))
             return result.scalars().all()
 
@@ -67,7 +118,7 @@ class AsyncModelManager:
         all() method.
         Returns all instances of the model.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(select(self.model_class))
             return result.scalars().all()
 
@@ -76,11 +127,12 @@ class AsyncModelManager:
         create() method.
         Creates and returns new instance.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             instance = self.model_class(**kwargs)
             session.add(instance)
-            await session.commit()
-            await session.refresh(instance)
+            if not self._is_in_transaction():
+                await session.commit()
+                await session.refresh(instance)
             return instance
 
     async def get_or_create(self, defaults: Dict[str, Any] = None, **kwargs) -> tuple[T, bool]:
@@ -111,7 +163,7 @@ class AsyncModelManager:
             defaults: Default values for creation/update
             **kwargs: Fields to lookup and potentially create/update with
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             instance = await self.get(**kwargs)
 
             if instance:
@@ -120,8 +172,9 @@ class AsyncModelManager:
                     if hasattr(instance, field):
                         setattr(instance, field, value)
 
-                await session.commit()
-                await session.refresh(instance)
+                if not self._is_in_transaction():
+                    await session.commit()
+                    await session.refresh(instance)
                 return instance, False
             else:
                 create_data = defaults.copy() if defaults else {}
@@ -129,8 +182,9 @@ class AsyncModelManager:
 
                 new_instance = self.model_class(**create_data)
                 session.add(new_instance)
-                await session.commit()
-                await session.refresh(new_instance)
+                if not self._is_in_transaction():
+                    await session.commit()
+                    await session.refresh(new_instance)
                 return new_instance, True
 
     async def filter_exists(self, **kwargs) -> bool:
@@ -138,7 +192,7 @@ class AsyncModelManager:
         Check if any instance matching criteria exists.
         Returns True/False.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(select(self.model_class).filter_by(**kwargs).exists())
             return result.scalar()
 
@@ -147,7 +201,7 @@ class AsyncModelManager:
         count() method.
         Returns count of instances matching criteria.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             if kwargs:
                 result = await session.execute(select(self.model_class).filter_by(**kwargs))
                 return len(result.scalars().all())
@@ -162,9 +216,10 @@ class AsyncModelManager:
         delete() method.
         Deletes instances matching criteria and returns count.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(delete(self.model_class).filter_by(**kwargs))
-            await session.commit()
+            if not self._is_in_transaction():
+                await session.commit()
             return result.rowcount
 
     async def first(self) -> Optional[T]:
@@ -172,7 +227,7 @@ class AsyncModelManager:
         first() method.
         Returns first instance or None.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(select(self.model_class).limit(1))
             return result.scalar_one_or_none()
 
@@ -181,7 +236,7 @@ class AsyncModelManager:
         last() method.
         Returns last instance or None.
         """
-        async with self._get_session() as session:
+        async with self._session_scope() as session:
             result = await session.execute(
                 select(self.model_class).order_by(self.model_class.id.desc()).limit(1)
             )
@@ -319,7 +374,7 @@ class UserManager(AsyncModelManager):
 
     async def create_user(self, email: str, password: str, **kwargs):
         """Create a user with hashed password."""
-        from .auth import get_password_hash
+        from .auth.password import get_password_hash
 
         user = await self.create(email=email, hashed_password=get_password_hash(password), **kwargs)
         return user

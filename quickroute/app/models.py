@@ -62,13 +62,13 @@ class User(QuickRouteModel):
 
     def set_password(self, raw_password: str):
         """Set password using method"""
-        from .auth import hash_password
+        from .auth.password import hash_password
 
         self.hashed_password = hash_password(raw_password)
 
     def check_password(self, raw_password: str) -> bool:
         """Check password using method"""
-        from .auth import verify_password
+        from .auth.password import verify_password
 
         return verify_password(raw_password, self.hashed_password)
 

@@ -1,10 +1,11 @@
 """
 QuickRoute plugins package.
 
-Re-exports plugins from internal app.plugins for clean public API.
+Plugins are loaded automatically from INSTALLED_PLUGINS setting.
+Each plugin module must export a 'Plugin' class.
 """
 
-from quickroute.app.plugins.base import BasePlugin, PluginManager, get_plugin_manager
+from .base import BasePlugin, PluginManager, get_plugin_manager
 
 __all__ = [
     "BasePlugin",

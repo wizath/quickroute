@@ -29,3 +29,7 @@ alembic/versions/*.py
 example_notes/notes.db
 example_notes/notes.sqlite
 example_blog/*.db
+
+# Documentation (except README)
+*.md
+!README.md

@@ -8,7 +8,7 @@ from typing import Dict, List, Set, Optional, Any, Callable
 from datetime import datetime
 from fastapi import WebSocket
 from .exceptions import WebSocketMessageError
-from ..logging import logger
+from quickroute.logging import logger
 
 
 class WebSocketConnection:

@@ -6,7 +6,7 @@ Simplified routing system focused on FastAPI decorators with built-in WebSocket 
 
 from typing import Callable, List, Optional, Union
 from fastapi import APIRouter, FastAPI
-from .logging import logger
+from quickroute.logging import logger
 
 
 class Router:

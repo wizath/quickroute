@@ -5,7 +5,7 @@ Base plugin system for QuickRoute.
 from typing import Dict, List, Optional
 import importlib
 import asyncio
-from ..logging import logger
+from quickroute.logging import logger
 
 
 class BasePlugin:

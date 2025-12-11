@@ -2,7 +2,7 @@ from sqladmin import Admin, ModelView
 from fastapi import FastAPI, Request
 
 from .models import User, BlacklistedToken
-from .admin_auth import create_admin_with_auth
+from .auth.admin import create_admin_with_auth
 from .settings import settings
 
 

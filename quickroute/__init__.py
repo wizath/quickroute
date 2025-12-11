@@ -18,8 +18,13 @@ from .app.middleware import load_middleware
 from .app.managers import AsyncModelManager, UserManager
 
 # Authentication imports - commonly used functions
-from .app.jwt_utils import create_access_token, create_refresh_token, decode_token
-from .app.auth import verify_password, get_password_hash
+from .app.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    verify_password,
+    get_password_hash,
+)
 
 # Model imports for convenience
 from .app.models import User
@@ -49,8 +54,7 @@ except ImportError:
     JOBS_AVAILABLE = False
 
 try:
-    from .app.plugins.base import BasePlugin
-    from .app.plugins.manager import PluginManager
+    from .plugins import BasePlugin, PluginManager
 
     PLUGINS_AVAILABLE = True
 except ImportError:

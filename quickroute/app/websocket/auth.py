@@ -14,7 +14,7 @@ from .exceptions import WebSocketAuthError
 from ..models import User
 from ..database import AsyncSessionLocal
 from ..settings import settings
-from ..logging import logger
+from quickroute.logging import logger
 
 
 class WebSocketAuthenticator:

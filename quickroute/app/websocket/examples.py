@@ -11,7 +11,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from .decorators import websocket, websocket_room, websocket_auth, rate_limit
 from .connection import get_websocket_manager
 from .auth import get_websocket_broadcaster
-from ..logging import logger
+from quickroute.logging import logger
 
 
 # Example 1: Simple Echo WebSocket

@@ -1,6 +1,8 @@
+"""Logging configuration for QuickRoute."""
+
 import logging
 import sys
-from .settings import settings
+from quickroute.app.settings import settings
 
 
 def setup_logging():

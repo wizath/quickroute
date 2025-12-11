@@ -3,10 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .database import AsyncSessionLocal
-from .jwt_utils import decode_token, verify_token_type
+from .auth.jwt import decode_token, verify_token_type
 from .models import User, BlacklistedToken
 from .exceptions import AuthenticationError, AuthorizationError
-from .logging import logger
+from quickroute.logging import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 

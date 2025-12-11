@@ -1,12 +1,14 @@
+"""JWT token utilities."""
+
 import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
-from .settings import settings
+from quickroute.app.settings import settings
 
 
 def create_access_token(user_id: int) -> dict:
-    """Create JWT access token (30 minutes)"""
+    """Create JWT access token."""
     jti = str(uuid4())
     expires = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
@@ -23,7 +25,7 @@ def create_access_token(user_id: int) -> dict:
 
 
 def create_refresh_token(user_id: int) -> dict:
-    """Create JWT refresh token (30 days)"""
+    """Create JWT refresh token."""
     jti = str(uuid4())
     expires = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -40,7 +42,7 @@ def create_refresh_token(user_id: int) -> dict:
 
 
 def decode_token(token: str) -> Optional[dict]:
-    """Decode and verify JWT token"""
+    """Decode and verify JWT token."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         return payload
@@ -51,5 +53,5 @@ def decode_token(token: str) -> Optional[dict]:
 
 
 def verify_token_type(payload: dict, expected_type: str) -> bool:
-    """Verify token type (access or refresh)"""
+    """Verify token type (access or refresh)."""
     return payload.get("type") == expected_type

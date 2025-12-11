@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from .logging import logger
+from quickroute.logging import logger
 from .settings import settings
 
 
@@ -255,40 +255,28 @@ class UserMiddleware(MiddlewareMixin):
     """
 
     async def process_request(self, request: Request) -> Optional[Response]:
+        from .models import User
+
         if hasattr(request.state, "session"):
             user_id = request.state.session.get("user_id")
             if user_id:
-                from .models import User
-                from .database import AsyncSessionLocal
-                from sqlalchemy import select
-
-                async with AsyncSessionLocal() as session:
-                    result = await session.execute(select(User).where(User.id == user_id))
-                    user = result.scalar_one_or_none()
-                    if user and user.is_active:
-                        request.state.user = user
-                        request.state.authenticated = True
-                        return None
+                user = await User.objects.get(id=user_id)
+                if user and user.is_active:
+                    request.state.user = user
+                    request.state.authenticated = True
+                    return None
 
         auth_header = request.headers.get("authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header[7:]
-            from .jwt_utils import decode_token
+            from .auth.jwt import decode_token
 
             payload = decode_token(token)
             if payload:
-                from .models import User
-                from .database import AsyncSessionLocal
-                from sqlalchemy import select
-
-                async with AsyncSessionLocal() as session:
-                    result = await session.execute(
-                        select(User).where(User.id == int(payload.get("sub")))
-                    )
-                    user = result.scalar_one_or_none()
-                    if user and user.is_active:
-                        request.state.user = user
-                        request.state.authenticated = True
+                user = await User.objects.get(id=int(payload.get("sub")))
+                if user and user.is_active:
+                    request.state.user = user
+                    request.state.authenticated = True
 
         if not hasattr(request.state, "user"):
             request.state.user = None

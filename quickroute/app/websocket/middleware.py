@@ -8,7 +8,7 @@ from typing import Callable, Dict, Any
 from fastapi import WebSocket
 from .connection import WebSocketConnection
 from .auth import get_websocket_client_manager
-from ..logging import logger
+from quickroute.logging import logger
 
 
 class WebSocketMiddleware:

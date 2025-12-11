@@ -11,7 +11,7 @@ from functools import wraps
 from fastapi import WebSocket, WebSocketDisconnect
 from .connection import get_websocket_manager, WebSocketConnection
 from .exceptions import WebSocketException, WebSocketDisconnect, WebSocketAuthError
-from ..logging import logger
+from quickroute.logging import logger
 
 
 def websocket(path: str, **kwargs):

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Callable, Dict, List, Optional, Any
 from enum import Enum
 from dataclasses import dataclass
-from .logging import logger
+from quickroute.logging import logger
 
 
 class JobStatus(Enum):

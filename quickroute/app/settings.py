@@ -160,6 +160,7 @@ class BaseSettings:
     )
 
     # Plugin System
+    # Plugins are loaded by module path. Each module must export a 'Plugin' class.
     INSTALLED_PLUGINS = [
         "quickroute.plugins.celery",
     ]
