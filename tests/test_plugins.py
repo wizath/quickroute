@@ -3,8 +3,8 @@ Tests for the simplified plugin system.
 """
 
 import pytest
-from quickroute.app.plugins.base import BasePlugin, PluginManager
-from quickroute.app.settings import BaseSettings
+from quickroute.plugins import BasePlugin, PluginManager
+from quickroute.settings import BaseSettings
 
 
 class MockSettings(BaseSettings):

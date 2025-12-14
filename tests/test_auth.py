@@ -7,10 +7,16 @@ import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from quickroute.app.auth import hash_password, verify_password, get_password_hash
-from quickroute.app.jwt_utils import create_access_token, decode_token, create_refresh_token
-from quickroute.app.models import User
-from quickroute.app.settings import settings
+from quickroute.auth import (
+    hash_password,
+    verify_password,
+    get_password_hash,
+    create_access_token,
+    decode_token,
+    create_refresh_token,
+)
+from quickroute.models import User
+from quickroute.settings import settings
 
 
 class TestTokenCreation:
@@ -290,7 +296,7 @@ class TestAuthIntegration:
     @pytest.mark.asyncio
     async def test_auth_with_job_system(self, test_db: AsyncSession, test_user: User):
         """Test authentication integration with job system."""
-        from quickroute.app.jobs import Job, JobRegistry
+        from quickroute.jobs import Job, JobRegistry
 
         # Create a job that requires authentication
         async def authenticated_job():
@@ -417,7 +423,7 @@ class TestAuthUtilities:
     @pytest.mark.asyncio
     async def test_create_user_with_auth(self, test_db: AsyncSession):
         """Test creating a user with authentication."""
-        from quickroute.app.auth import get_password_hash
+        from quickroute.auth import get_password_hash
 
         user = User(
             email="authuser@example.com",

@@ -9,11 +9,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from quickroute.app.database import Base
-from quickroute.app.main import app
+from quickroute.database import Base
+from quickroute.main import app
 from quickroute import User, create_access_token
-from quickroute.app.models import BlacklistedToken
-from quickroute.app.database import get_async_session
+from quickroute.models import BlacklistedToken
+from quickroute.database import get_async_session
 
 
 # Test database URL
@@ -80,7 +80,7 @@ def client() -> TestClient:
 @pytest.fixture
 async def test_user(test_db: AsyncSession) -> User:
     """Create a test user."""
-    from quickroute.app.auth import get_password_hash
+    from quickroute.auth import get_password_hash
 
     user = User(
         email="test@example.com",
@@ -97,7 +97,7 @@ async def test_user(test_db: AsyncSession) -> User:
 @pytest.fixture
 async def test_superuser(test_db: AsyncSession) -> User:
     """Create a test superuser."""
-    from quickroute.app.auth import get_password_hash
+    from quickroute.auth import get_password_hash
 
     user = User(
         email="admin@example.com",
@@ -140,7 +140,7 @@ def superuser_headers(test_superuser_token: str) -> dict:
 @pytest.fixture
 async def multiple_users(test_db: AsyncSession) -> list[User]:
     """Create multiple test users."""
-    from quickroute.app.auth import get_password_hash
+    from quickroute.auth import get_password_hash
 
     users = []
 
@@ -164,7 +164,7 @@ async def multiple_users(test_db: AsyncSession) -> list[User]:
 @pytest.fixture
 async def inactive_user(test_db: AsyncSession) -> User:
     """Create an inactive test user."""
-    from quickroute.app.auth import get_password_hash
+    from quickroute.auth import get_password_hash
 
     user = User(
         email="inactive@example.com",
@@ -206,8 +206,8 @@ def mock_celery():
 @pytest.fixture
 def test_plugin():
     """Create a test plugin."""
-    from quickroute.app.plugins.base import BasePlugin
-    from quickroute.app.settings import BaseSettings
+    from quickroute.plugins.base import BasePlugin
+    from quickroute.settings import BaseSettings
 
     class TestPlugin(BasePlugin):
         @property
@@ -239,7 +239,7 @@ def test_plugin():
 @pytest.fixture
 def test_settings():
     """Create test settings."""
-    from quickroute.app.settings import TestingSettings
+    from quickroute.settings import TestingSettings
 
     return TestingSettings()
 
@@ -250,7 +250,7 @@ def create_user_factory(test_db: AsyncSession):
     """Factory function to create users."""
 
     async def _create_user(email: str = None, password: str = None, **kwargs):
-        from quickroute.app.auth import get_password_hash
+        from quickroute.auth import get_password_hash
 
         user = User(
             email=email or "test@example.com",

@@ -7,22 +7,15 @@ Shows how to set up a Django-like admin panel for managing data.
 """
 
 import asyncio
-from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Boolean, Integer, Text, DateTime, ForeignKey
-from sqlalchemy.sql import func
+from sqlalchemy import String, Boolean, Integer, Text, DateTime
 from datetime import datetime
 
 # Import from QuickRoute library
-from quickroute import (
-    QuickRoute,
-    User,
-    setup_admin,
-    ADMIN_AVAILABLE
-)
-from quickroute.app.database import Base
-from quickroute.app.settings import BaseSettings
+from quickroute import QuickRoute, User, setup_admin, ADMIN_AVAILABLE
+from quickroute.database import Base
+from quickroute.settings import BaseSettings
 
 
 # 1. Configure Settings
@@ -63,7 +56,9 @@ class BlogPost(Base):
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
     view_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     def __str__(self):
         return self.title
@@ -103,8 +98,7 @@ class Category(Base):
 
 # 4. Create QuickRoute App
 app = QuickRoute(
-    title="QuickRoute Admin Demo",
-    description="Demonstrating SQLAdmin with JWT authentication"
+    title="QuickRoute Admin Demo", description="Demonstrating SQLAdmin with JWT authentication"
 )
 
 
@@ -132,8 +126,7 @@ async def create_demo_data():
 
     try:
         admin_user = await user_manager.create_superuser(
-            email="admin@example.com",
-            password="admin123"
+            email="admin@example.com", password="admin123"
         )
         print(f"✅ Created admin user: {admin_user.email}")
     except:
@@ -141,10 +134,14 @@ async def create_demo_data():
 
     # Create demo categories
     categories_data = [
-        {"name": "Technology", "description": "Posts about technology and programming", "color": "#007bff"},
+        {
+            "name": "Technology",
+            "description": "Posts about technology and programming",
+            "color": "#007bff",
+        },
         {"name": "Design", "description": "UI/UX design articles", "color": "#28a745"},
         {"name": "Business", "description": "Business and startup content", "color": "#ffc107"},
-        {"name": "Tutorial", "description": "How-to guides and tutorials", "color": "#17a2b8"}
+        {"name": "Tutorial", "description": "How-to guides and tutorials", "color": "#17a2b8"},
     ]
 
     for cat_data in categories_data:
@@ -163,7 +160,7 @@ async def create_demo_data():
             "excerpt": "A comprehensive guide to building async web apps with QuickRoute.",
             "author_id": "admin@example.com",
             "is_published": True,
-            "is_featured": True
+            "is_featured": True,
         },
         {
             "title": "JWT Authentication Best Practices",
@@ -172,7 +169,7 @@ async def create_demo_data():
             "excerpt": "Security best practices for JWT authentication in modern web applications.",
             "author_id": "admin@example.com",
             "is_published": True,
-            "is_featured": True
+            "is_featured": True,
         },
         {
             "title": "Building Admin Panels with SQLAdmin",
@@ -181,7 +178,7 @@ async def create_demo_data():
             "excerpt": "Create beautiful admin interfaces for your FastAPI applications using SQLAdmin.",
             "author_id": "admin@example.com",
             "is_published": True,
-            "is_featured": False
+            "is_featured": False,
         },
         {
             "title": "Async Database Operations with SQLAlchemy",
@@ -190,8 +187,8 @@ async def create_demo_data():
             "excerpt": "Learn how to perform efficient async database operations with SQLAlchemy 2.0.",
             "author_id": "admin@example.com",
             "is_published": False,
-            "is_featured": False
-        }
+            "is_featured": False,
+        },
     ]
 
     for post_data in posts_data:
@@ -207,15 +204,15 @@ async def create_demo_data():
                         "author_name": "John Doe",
                         "author_email": "john@example.com",
                         "content": f"Great article about {post.title.lower()}!",
-                        "is_approved": True
+                        "is_approved": True,
                     },
                     {
                         "post_id": post.id,
                         "author_name": "Jane Smith",
                         "author_email": "jane@example.com",
                         "content": "Thanks for sharing this information. Very helpful!",
-                        "is_approved": True
-                    }
+                        "is_approved": True,
+                    },
                 ]
 
                 for comment_data in comments_data:
@@ -234,6 +231,7 @@ from quickroute import Router
 
 api_router = Router(prefix="/api", tags=["api"])
 
+
 @api_router.get("/")
 async def root():
     """Root endpoint."""
@@ -246,9 +244,10 @@ async def root():
             "Django-like Admin Panel",
             "User Management",
             "Blog Post Management",
-            "Comment Moderation"
-        ]
+            "Comment Moderation",
+        ],
     }
+
 
 @api_router.get("/stats")
 async def get_stats():
@@ -260,8 +259,9 @@ async def get_stats():
     return {
         "published_posts": post_count,
         "approved_comments": comment_count,
-        "active_users": user_count
+        "active_users": user_count,
     }
+
 
 app.include_router(api_router)
 

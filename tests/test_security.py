@@ -9,10 +9,14 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from quickroute import User, create_access_token, create_refresh_token
-from quickroute.app.models import BlacklistedToken
-from quickroute.app.jwt_utils import decode_token
-from quickroute.app.auth import get_password_hash
+from quickroute import (
+    User,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_password_hash,
+)
+from quickroute.models import BlacklistedToken
 
 
 @pytest.mark.security
@@ -584,7 +588,7 @@ class TestPasswordSecurity:
         assert hash1 != hash2
 
         # But both should verify correctly
-        from quickroute.app.auth import verify_password
+        from quickroute.auth import verify_password
 
         assert verify_password(password, hash1) is True
         assert verify_password(password, hash2) is True
@@ -625,7 +629,7 @@ class TestPasswordSecurity:
 
     def test_timing_attack_resistance(self):
         """Test that password verification is resistant to timing attacks."""
-        from quickroute.app.auth import verify_password
+        from quickroute.auth import verify_password
         import time
 
         password = "correct_password"
@@ -665,7 +669,7 @@ class TestJWTSecurityBestPractices:
 
         # Decode and check exp claim
         import jwt
-        from quickroute.app.settings import settings
+        from quickroute.settings import settings
 
         access_payload = jwt.decode(
             access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
@@ -704,7 +708,7 @@ class TestJWTSecurityBestPractices:
 
         # Decode and check type
         import jwt
-        from quickroute.app.settings import settings
+        from quickroute.settings import settings
 
         access_payload = jwt.decode(
             access_token["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
@@ -721,7 +725,7 @@ class TestJWTSecurityBestPractices:
         token_data = create_access_token(123)
 
         import jwt
-        from quickroute.app.settings import settings
+        from quickroute.settings import settings
 
         payload = jwt.decode(
             token_data["token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]

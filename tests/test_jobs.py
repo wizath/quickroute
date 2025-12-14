@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from quickroute.app.jobs import (
+from quickroute.jobs import (
     Job,
     JobScheduler,
     JobStatus,
@@ -74,7 +74,7 @@ class TestJobRegistry:
 
     def test_register_job(self):
         """Test registering a new job."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -88,7 +88,7 @@ class TestJobRegistry:
 
     def test_register_duplicate_job(self):
         """Test registering a job with duplicate name."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func1():
             return "completed1"
@@ -113,7 +113,7 @@ class TestJobRegistry:
 
     def test_get_job(self):
         """Test getting a job by name."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -129,7 +129,7 @@ class TestJobRegistry:
 
     def test_list_jobs(self):
         """Test listing all registered jobs."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -156,7 +156,7 @@ class TestJobRegistry:
 
     def test_enable_disable_job(self):
         """Test enabling and disabling jobs."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -174,7 +174,7 @@ class TestJobRegistry:
 
     def test_record_execution(self):
         """Test recording job execution results."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -215,7 +215,7 @@ class TestJobRegistry:
 
     def test_job_history_management(self):
         """Test job history management."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -273,7 +273,7 @@ class TestJobScheduler:
     @pytest.mark.asyncio
     async def test_run_job_now(self):
         """Test running a job immediately."""
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         scheduler = JobScheduler()
 
@@ -307,7 +307,7 @@ class TestJobScheduler:
     async def test_run_job_now_already_running(self):
         """Test running job that's already running."""
         scheduler = JobScheduler()
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def long_running_job():
             await asyncio.sleep(2)
@@ -331,7 +331,7 @@ class TestJobScheduler:
     async def test_run_job_with_timeout(self):
         """Test job execution with timeout."""
         scheduler = JobScheduler()
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def slow_job():
             await asyncio.sleep(2)  # Longer than timeout
@@ -349,7 +349,7 @@ class TestJobScheduler:
     async def test_run_job_with_retries(self):
         """Test job execution with retries."""
         scheduler = JobScheduler()
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         call_count = 0
 
@@ -379,7 +379,7 @@ class TestJobScheduler:
     async def test_scheduler_job_checking(self):
         """Test scheduler checking for jobs to run."""
         scheduler = JobScheduler()
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -429,7 +429,7 @@ class TestJobScheduler:
     async def test_get_job_status(self):
         """Test getting job status."""
         scheduler = JobScheduler()
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         async def test_job_func():
             return "completed"
@@ -458,7 +458,7 @@ class TestPeriodicDecorator:
             return "completed"
 
         # Check if job was registered
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         job = job_registry.get_job("decorated_job")
         assert job is not None
@@ -472,7 +472,7 @@ class TestPeriodicDecorator:
         async def default_job():
             return "completed"
 
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         job = job_registry.get_job("default_job")
         assert job is not None
@@ -486,7 +486,7 @@ class TestExampleJobs:
     @pytest.mark.asyncio
     async def test_cleanup_expired_tokens(self, test_db: AsyncSession, expired_blacklisted_token):
         """Test cleanup_expired_tokens example job."""
-        from quickroute.app.models import BlacklistedToken
+        from quickroute.models import BlacklistedToken
         from sqlalchemy import select, delete
         from datetime import datetime
 
@@ -531,7 +531,7 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_job_with_database(self, test_db: AsyncSession):
         """Test job execution with database access."""
-        from quickroute.app.jobs import Job, job_registry
+        from quickroute.jobs import Job, job_registry
 
         # Create job that returns test data
         async def db_job():
@@ -554,12 +554,12 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_job_error_handling(self):
         """Test job error handling and logging."""
-        from quickroute.app.jobs import Job
+        from quickroute.jobs import Job
 
         async def error_job():
             raise ValueError("Test error")
 
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         job = Job(name="error_job", func=error_job, schedule="hourly")
         job_registry.register(job)
@@ -573,14 +573,14 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_job_execution(self):
         """Test concurrent job execution."""
-        from quickroute.app.jobs import Job
+        from quickroute.jobs import Job
         import asyncio
 
         async def concurrent_job(job_id):
             await asyncio.sleep(0.1)  # Simulate work
             return f"job_{job_id}_completed"
 
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         jobs = []
         for i in range(5):
@@ -602,12 +602,12 @@ class TestJobIntegration:
     @pytest.mark.asyncio
     async def test_job_scheduler_lifecycle(self):
         """Test complete job scheduler lifecycle."""
-        from quickroute.app.jobs import Job
+        from quickroute.jobs import Job
 
         async def lifecycle_job():
             return "lifecycle_completed"
 
-        from quickroute.app.jobs import job_registry
+        from quickroute.jobs import job_registry
 
         job = Job(name="lifecycle_job", func=lifecycle_job, schedule="hourly")
         job_registry.register(job)

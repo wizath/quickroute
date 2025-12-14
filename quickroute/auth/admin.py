@@ -6,9 +6,9 @@ from sqladmin import Admin
 from starlette.responses import Response
 import jwt
 
-from quickroute.app.settings import settings
+from quickroute.settings import settings
 from .jwt import decode_token, create_access_token, create_refresh_token
-from quickroute.app.models import User
+from quickroute.models import User
 
 
 class AdminAuth:
@@ -126,7 +126,7 @@ class QuickRouteAdmin(Admin):
                     },
                 )
 
-            from quickroute.app.dependencies import authenticate_user
+            from quickroute.dependencies import authenticate_user
 
             user = await authenticate_user(email, password)
 

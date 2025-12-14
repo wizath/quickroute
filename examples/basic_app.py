@@ -10,9 +10,8 @@ This example demonstrates the core features of QuickRoute:
 """
 
 import asyncio
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Boolean, DateTime
 from datetime import datetime
@@ -24,11 +23,10 @@ from quickroute import (
     create_access_token,
     decode_token,
     verify_password,
-    get_password_hash,
-    UserManager
+    UserManager,
 )
-from quickroute.app.database import Base
-from quickroute.app.settings import BaseSettings
+from quickroute.database import Base
+from quickroute.settings import BaseSettings
 
 
 # 1. Configure Settings
@@ -74,10 +72,7 @@ class Note(Base):
 
 
 # 4. Create QuickRoute App
-app = QuickRoute(
-    title="QuickRoute Basic App",
-    description="A basic QuickRoute application example"
-)
+app = QuickRoute(title="QuickRoute Basic App", description="A basic QuickRoute application example")
 
 
 # 5. Define API Routes
@@ -85,11 +80,13 @@ from quickroute import Router
 
 router = Router(prefix="/api", tags=["notes"])
 
+
 @router.get("/notes")
 async def list_notes():
     """List all public notes."""
     notes = await Note.objects.filter(is_public=True).all()
     return {"notes": notes}
+
 
 @router.post("/notes")
 async def create_note(title: str, content: str, is_public: bool = False):
@@ -98,9 +95,10 @@ async def create_note(title: str, content: str, is_public: bool = False):
         title=title,
         content=content,
         is_public=is_public,
-        author_id="demo@example.com"  # In real app, use current user
+        author_id="demo@example.com",  # In real app, use current user
     )
     return {"note": note, "message": "Note created successfully"}
+
 
 @router.get("/notes/{note_id}")
 async def get_note(note_id: int):
@@ -115,6 +113,7 @@ async def get_note(note_id: int):
 auth_router = Router(prefix="/auth", tags=["authentication"])
 
 security = HTTPBearer()
+
 
 async def get_current_user(token: str = Depends(security)):
     """Get current user from JWT token."""
@@ -132,6 +131,7 @@ async def get_current_user(token: str = Depends(security)):
         return user
     except (ValueError, KeyError):
         raise HTTPException(status_code=401, detail="Invalid token")
+
 
 @auth_router.post("/login")
 async def login(email: str, password: str):
@@ -151,8 +151,9 @@ async def login(email: str, password: str):
     return {
         "access_token": token_data["token"],
         "token_type": "bearer",
-        "user": {"id": user.id, "email": user.email}
+        "user": {"id": user.id, "email": user.email},
     }
+
 
 @auth_router.get("/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
@@ -162,13 +163,14 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
             "id": current_user.id,
             "email": current_user.email,
             "is_active": current_user.is_active,
-            "is_superuser": current_user.is_superuser
+            "is_superuser": current_user.is_superuser,
         }
     }
 
 
 # 7. User Management Routes
 user_router = Router(prefix="/users", tags=["users"])
+
 
 @user_router.post("/register")
 async def register_user(email: str, password: str):
@@ -180,19 +182,11 @@ async def register_user(email: str, password: str):
 
     # Create user
     user_manager = UserManager()
-    user = await user_manager.create_user(
-        email=email,
-        password=password,
-        is_active=True
-    )
+    user = await user_manager.create_user(email=email, password=password, is_active=True)
 
     return {
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "is_active": user.is_active
-        },
-        "message": "User registered successfully"
+        "user": {"id": user.id, "email": user.email, "is_active": user.is_active},
+        "message": "User registered successfully",
     }
 
 
@@ -212,10 +206,7 @@ async def create_demo_data():
 
     try:
         demo_user = await user_manager.create_user(
-            email="demo@example.com",
-            password="demo123",
-            is_active=True,
-            is_superuser=True
+            email="demo@example.com", password="demo123", is_active=True, is_superuser=True
         )
         print(f"Created demo user: {demo_user.email}")
     except:
@@ -226,18 +217,18 @@ async def create_demo_data():
         {
             "title": "Welcome to QuickRoute",
             "content": "This is a basic example of QuickRoute with Django-like patterns.",
-            "is_public": True
+            "is_public": True,
         },
         {
             "title": "JWT Authentication",
             "content": "QuickRoute includes built-in JWT authentication with secure cookies.",
-            "is_public": True
+            "is_public": True,
         },
         {
             "title": "Admin Panel",
             "content": "SQLAdmin integration provides Django-like admin interface.",
-            "is_public": True
-        }
+            "is_public": True,
+        },
     ]
 
     for note_data in notes_data:

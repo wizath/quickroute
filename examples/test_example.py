@@ -11,8 +11,7 @@ from httpx import AsyncClient
 
 # Import QuickRoute
 from quickroute import QuickRoute, QuickRouteTestCase
-from quickroute.test import test_db_session
-from quickroute.app.models import User
+from quickroute.models import User
 
 
 # Create a simple test app
@@ -58,9 +57,7 @@ class TestUserModel(QuickRouteTestCase):
     async def test_create_user(self):
         """Test creating a user."""
         user = await self.create_user(
-            email="test@example.com",
-            password="testpass123",
-            is_active=True
+            email="test@example.com", password="testpass123", is_active=True
         )
 
         assert user.email == "test@example.com"
@@ -70,12 +67,9 @@ class TestUserModel(QuickRouteTestCase):
     @pytest.mark.asyncio
     async def test_user_authentication(self):
         """Test user authentication."""
-        from quickroute.app.auth import verify_password
+        from quickroute.auth import verify_password
 
-        user = await self.create_user(
-            email="auth@example.com",
-            password="testpass123"
-        )
+        user = await self.create_user(email="auth@example.com", password="testpass123")
 
         # Test password verification
         assert verify_password("testpass123", user.hashed_password)
@@ -84,10 +78,7 @@ class TestUserModel(QuickRouteTestCase):
     @pytest.mark.asyncio
     async def test_user_model_methods(self):
         """Test Django-like model methods."""
-        user = await self.create_user(
-            email="methods@example.com",
-            password="testpass123"
-        )
+        user = await self.create_user(email="methods@example.com", password="testpass123")
 
         # Test string representation
         assert str(user) == "methods@example.com"
@@ -110,12 +101,9 @@ class TestAuthentication(QuickRouteTestCase):
     @pytest.mark.asyncio
     async def test_create_access_token(self):
         """Test JWT token creation."""
-        from quickroute.app.jwt_utils import create_access_token, decode_token
+        from quickroute.auth import create_access_token, decode_token
 
-        user = await self.create_user(
-            email="token@example.com",
-            password="testpass123"
-        )
+        user = await self.create_user(email="token@example.com", password="testpass123")
 
         # Create token
         token_data = create_access_token(user.id)
@@ -134,9 +122,7 @@ class TestAuthentication(QuickRouteTestCase):
         """Test user permissions."""
         # Create regular user
         user = await self.create_user(
-            email="user@example.com",
-            password="testpass123",
-            is_superuser=False
+            email="user@example.com", password="testpass123", is_superuser=False
         )
 
         assert user.is_superuser is False
@@ -144,9 +130,7 @@ class TestAuthentication(QuickRouteTestCase):
 
         # Create superuser
         admin = await self.create_user(
-            email="admin@example.com",
-            password="adminpass123",
-            is_superuser=True
+            email="admin@example.com", password="adminpass123", is_superuser=True
         )
 
         assert admin.is_superuser is True
@@ -161,13 +145,10 @@ class TestIntegration(QuickRouteTestCase):
     @pytest.mark.asyncio
     async def test_user_creation_and_authentication_flow(self):
         """Test complete user flow."""
-        from quickroute.app.jwt_utils import create_access_token, decode_token
+        from quickroute.auth import create_access_token, decode_token
 
         # Create user
-        user = await self.create_user(
-            email="flow@example.com",
-            password="testpass123"
-        )
+        user = await self.create_user(email="flow@example.com", password="testpass123")
 
         # Verify user exists in database
         await self.assertModelExists(User, email="flow@example.com")
@@ -223,10 +204,7 @@ class TestPerformance(QuickRouteTestCase):
         # Create 100 users
         users = []
         for i in range(100):
-            user = await self.create_user(
-                email=f"user{i}@example.com",
-                password=f"pass{i}"
-            )
+            user = await self.create_user(email=f"user{i}@example.com", password=f"pass{i}")
             users.append(user)
 
         end_time = time.time()
@@ -256,9 +234,6 @@ if __name__ == "__main__":
     print("Running with quickroute test command...")
 
     # Run the tests
-    result = subprocess.run([
-        sys.executable, "-m", "fastdjango.cli", "test",
-        __file__, "-v"
-    ])
+    result = subprocess.run([sys.executable, "-m", "fastdjango.cli", "test", __file__, "-v"])
 
     sys.exit(result.returncode)

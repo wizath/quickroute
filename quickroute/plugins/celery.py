@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Callable
 import asyncio
 from .base import BasePlugin
 from quickroute.logging import logger
-from quickroute.app.exceptions import QuickRouteException
+from quickroute.exceptions import QuickRouteException
 
 
 class CeleryUnavailableError(QuickRouteException):
@@ -120,7 +120,7 @@ class CeleryPlugin(BasePlugin):
         """
 
         def decorator(func: Callable) -> Callable:
-            from quickroute.app.jobs import periodic as periodic_job
+            from quickroute.jobs import periodic as periodic_job
 
             periodic_job(schedule, name, **kwargs)(func)
 

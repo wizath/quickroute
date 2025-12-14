@@ -10,15 +10,15 @@ __email__ = "wizath@quickroute.dev"
 
 # Core imports - provide clean interface
 from .application import QuickRoute
-from .app.settings import BaseSettings
-from .app.models import QuickRouteModel
-from .app.router import Router
-from .app.database import get_async_session
-from .app.middleware import load_middleware
-from .app.managers import AsyncModelManager, UserManager
+from .settings import BaseSettings
+from .models import QuickRouteModel
+from .router import Router
+from .database import get_async_session
+from .middleware import load_middleware
+from .managers import AsyncModelManager, UserManager
 
 # Authentication imports - commonly used functions
-from .app.auth import (
+from .auth import (
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -27,11 +27,11 @@ from .app.auth import (
 )
 
 # Model imports for convenience
-from .app.models import User
+from .models import User
 
 # Admin imports (optional)
 try:
-    from .app.admin import ADMIN_AVAILABLE, setup_admin, UserAdmin, BlacklistedTokenAdmin
+    from .admin import ADMIN_AVAILABLE, setup_admin, UserAdmin, BlacklistedTokenAdmin
 except ImportError:
     ADMIN_AVAILABLE = False
     setup_admin = None
@@ -40,14 +40,14 @@ except ImportError:
 
 # Feature imports (with graceful fallbacks)
 try:
-    from .app.websocket.decorators import websocket, websocket_room
+    from .websocket.decorators import websocket, websocket_room
 
     WEBSOCKET_AVAILABLE = True
 except ImportError:
     WEBSOCKET_AVAILABLE = False
 
 try:
-    from .app.jobs import periodic
+    from .jobs import periodic
 
     JOBS_AVAILABLE = True
 except ImportError:

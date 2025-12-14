@@ -7,10 +7,9 @@ Shows user registration, login, protected routes, and token management.
 """
 
 import asyncio
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Import from QuickRoute library
 from quickroute import (
@@ -20,12 +19,11 @@ from quickroute import (
     create_refresh_token,
     decode_token,
     verify_password,
-    get_password_hash,
-    UserManager
+    UserManager,
 )
-from quickroute.app.database import Base, engine
-from quickroute.app.settings import BaseSettings
-from quickroute.app.models import BlacklistedToken
+from quickroute.database import Base
+from quickroute.settings import BaseSettings
+from quickroute.models import BlacklistedToken
 
 
 # 1. Configure Settings
@@ -70,13 +68,13 @@ class UserProfile(Base):
 
 # 4. Create QuickRoute App
 app = QuickRoute(
-    title="QuickRoute Auth Demo",
-    description="Demonstrating JWT authentication system"
+    title="QuickRoute Auth Demo", description="Demonstrating JWT authentication system"
 )
 
 
 # 5. Authentication Dependencies
 security = HTTPBearer()
+
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current user from JWT token."""
@@ -119,10 +117,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def get_current_superuser(current_user: User = Depends(get_current_user)):
     """Get current superuser."""
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user
 
 
@@ -133,43 +128,29 @@ auth_router = Router(prefix="/auth", tags=["authentication"])
 
 
 @auth_router.post("/register")
-async def register(
-    email: str,
-    password: str,
-    first_name: str = None,
-    last_name: str = None
-):
+async def register(email: str, password: str, first_name: str = None, last_name: str = None):
     """Register a new user."""
     # Check if user already exists
     existing_user = await User.objects.filter(email=email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     # Validate password
     if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long"
+            detail="Password must be at least 8 characters long",
         )
 
     # Create user
     user_manager = UserManager()
-    user = await user_manager.create_user(
-        email=email,
-        password=password,
-        is_active=True
-    )
+    user = await user_manager.create_user(email=email, password=password, is_active=True)
 
     return {
         "message": "User registered successfully",
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "is_active": user.is_active
-        }
+        "user": {"id": user.id, "email": user.email, "is_active": user.is_active},
     }
 
 
@@ -181,14 +162,12 @@ async def login(email: str, password: str):
 
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is disabled"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User account is disabled"
         )
 
     # Create tokens
@@ -204,8 +183,8 @@ async def login(email: str, password: str):
             "id": user.id,
             "email": user.email,
             "is_active": user.is_active,
-            "is_superuser": user.is_superuser
-        }
+            "is_superuser": user.is_superuser,
+        },
     }
 
 
@@ -216,16 +195,14 @@ async def refresh_token(refresh_token: str):
     payload = decode_token(refresh_token)
     if not payload:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
     # Check if token is blacklisted
     blacklisted = await BlacklistedToken.objects.filter(jti=payload.get("jti")).first()
     if blacklisted:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has been revoked"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked"
         )
 
     # Get user
@@ -234,8 +211,7 @@ async def refresh_token(refresh_token: str):
 
     if not user or not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive"
         )
 
     # Create new access token
@@ -244,7 +220,7 @@ async def refresh_token(refresh_token: str):
     return {
         "access_token": access_token_data["token"],
         "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
 
 
@@ -257,7 +233,7 @@ async def logout(refresh_token: str, current_user: User = Depends(get_current_us
         await BlacklistedToken.objects.create(
             jti=payload.get("jti"),
             token_type="refresh",
-            expires_at=datetime.fromtimestamp(payload.get("exp"))
+            expires_at=datetime.fromtimestamp(payload.get("exp")),
         )
 
     return {"message": "Successfully logged out"}
@@ -273,30 +249,27 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
             "is_active": current_user.is_active,
             "is_superuser": current_user.is_superuser,
             "created_at": current_user.created_at,
-            "updated_at": current_user.updated_at
+            "updated_at": current_user.updated_at,
         }
     }
 
 
 @auth_router.put("/change-password")
 async def change_password(
-    current_password: str,
-    new_password: str,
-    current_user: User = Depends(get_current_user)
+    current_password: str, new_password: str, current_user: User = Depends(get_current_user)
 ):
     """Change user password."""
     # Verify current password
     if not verify_password(current_password, current_user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect"
         )
 
     # Validate new password
     if len(new_password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be at least 8 characters long"
+            detail="New password must be at least 8 characters long",
         )
 
     # Update password
@@ -315,10 +288,7 @@ async def get_protected_profile(current_user: User = Depends(get_current_user)):
     """Protected endpoint that requires authentication."""
     return {
         "message": "This is a protected endpoint",
-        "user": {
-            "id": current_user.id,
-            "email": current_user.email
-        }
+        "user": {"id": current_user.id, "email": current_user.email},
     }
 
 
@@ -327,10 +297,7 @@ async def admin_only_endpoint(current_user: User = Depends(get_current_superuser
     """Admin-only endpoint."""
     return {
         "message": "This is an admin-only endpoint",
-        "admin": {
-            "id": current_user.id,
-            "email": current_user.email
-        }
+        "admin": {"id": current_user.id, "email": current_user.email},
     }
 
 
@@ -348,8 +315,8 @@ async def public_root():
             "User Registration",
             "Token Refresh",
             "Protected Routes",
-            "Admin Access Control"
-        ]
+            "Admin Access Control",
+        ],
     }
 
 
@@ -363,8 +330,8 @@ async def public_info():
         "endpoints": {
             "public": "/public/*",
             "auth": "/auth/*",
-            "protected": "/protected/* (requires authentication)"
-        }
+            "protected": "/protected/* (requires authentication)",
+        },
     }
 
 
@@ -382,16 +349,8 @@ async def create_demo_users():
     user_manager = UserManager()
 
     demo_users = [
-        {
-            "email": "user@example.com",
-            "password": "user123",
-            "is_superuser": False
-        },
-        {
-            "email": "admin@example.com",
-            "password": "admin123",
-            "is_superuser": True
-        }
+        {"email": "user@example.com", "password": "user123", "is_superuser": False},
+        {"email": "admin@example.com", "password": "admin123", "is_superuser": True},
     ]
 
     for user_data in demo_users:

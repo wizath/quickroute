@@ -7,21 +7,14 @@ Shows how to work with model managers, queries, and relationships.
 """
 
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Boolean, Integer, DateTime, ForeignKey, Text
-from sqlalchemy.sql import func
+from sqlalchemy import String, Boolean, Integer, DateTime, Text
 from datetime import datetime
 
 # Import from QuickRoute library
-from quickroute import (
-    QuickRoute,
-    User,
-    UserManager,
-    AsyncModelManager
-)
-from quickroute.app.database import Base
-from quickroute.app.settings import BaseSettings
+from quickroute import QuickRoute, UserManager, AsyncModelManager
+from quickroute.database import Base
+from quickroute.settings import BaseSettings
 
 
 # 1. Configure Settings
@@ -106,8 +99,7 @@ class Project(Base):
 
 # 4. Create QuickRoute App
 app = QuickRoute(
-    title="QuickRoute Models Demo",
-    description="Demonstrating Django-like model patterns"
+    title="QuickRoute Models Demo", description="Demonstrating Django-like model patterns"
 )
 
 
@@ -127,10 +119,7 @@ async def list_departments():
 @router.post("/departments")
 async def create_department(name: str, description: str):
     """Create a new department."""
-    department = await Department.objects.create(
-        name=name,
-        description=description
-    )
+    department = await Department.objects.create(name=name, description=description)
     return {"department": department, "message": "Department created successfully"}
 
 
@@ -147,12 +136,7 @@ async def list_employees(active_only: bool = True):
 
 @router.post("/employees")
 async def create_employee(
-    first_name: str,
-    last_name: str,
-    email: str,
-    department_id: int,
-    salary: int,
-    phone: str = None
+    first_name: str, last_name: str, email: str, department_id: int, salary: int, phone: str = None
 ):
     """Create a new employee."""
     employee = await Employee.objects.create(
@@ -161,7 +145,7 @@ async def create_employee(
         email=email,
         phone=phone,
         department_id=department_id,
-        salary=salary
+        salary=salary,
     )
     return {"employee": employee, "message": "Employee created successfully"}
 
@@ -218,11 +202,7 @@ async def get_model_stats():
     emp_count = await Employee.objects.filter(is_active=True).count()
     proj_count = await Project.objects.filter(is_active=True).count()
 
-    return {
-        "departments": dept_count,
-        "active_employees": emp_count,
-        "active_projects": proj_count
-    }
+    return {"departments": dept_count, "active_employees": emp_count, "active_projects": proj_count}
 
 
 # 6. Model Operations Demo
@@ -239,9 +219,7 @@ async def demonstrate_model_operations():
     try:
         # Create a demo user
         user = await user_manager.create_user(
-            email="manager@example.com",
-            password="demo123",
-            is_active=True
+            email="manager@example.com", password="demo123", is_active=True
         )
         print(f"✅ Created user: {user.email}")
     except:
@@ -254,7 +232,7 @@ async def demonstrate_model_operations():
     departments = [
         {"name": "Engineering", "description": "Software development and IT"},
         {"name": "Marketing", "description": "Marketing and sales"},
-        {"name": "HR", "description": "Human resources and recruitment"}
+        {"name": "HR", "description": "Human resources and recruitment"},
     ]
 
     for dept_data in departments:
@@ -278,7 +256,7 @@ async def demonstrate_model_operations():
                 "email": "john@example.com",
                 "department_id": eng_dept.id,
                 "salary": 75000,
-                "phone": "555-0101"
+                "phone": "555-0101",
             },
             {
                 "first_name": "Jane",
@@ -286,8 +264,8 @@ async def demonstrate_model_operations():
                 "email": "jane@example.com",
                 "department_id": eng_dept.id,
                 "salary": 85000,
-                "phone": "555-0102"
-            }
+                "phone": "555-0102",
+            },
         ]
 
         for emp_data in employees:
@@ -295,7 +273,9 @@ async def demonstrate_model_operations():
                 emp = await Employee.objects.create(**emp_data)
                 print(f"✅ Created employee: {emp.full_name}")
             except:
-                print(f"ℹ️  Employee '{emp_data['first_name']} {emp_data['last_name']}' already exists")
+                print(
+                    f"ℹ️  Employee '{emp_data['first_name']} {emp_data['last_name']}' already exists"
+                )
 
     # 4. Query Operations
     print("\n🔍 Query Operations:")
@@ -321,13 +301,13 @@ async def demonstrate_model_operations():
         {
             "name": "Website Redesign",
             "description": "Complete overhaul of company website",
-            "budget": 50000
+            "budget": 50000,
         },
         {
             "name": "Mobile App",
             "description": "Native mobile application development",
-            "budget": 100000
-        }
+            "budget": 100000,
+        },
     ]
 
     for proj_data in projects:

@@ -44,7 +44,7 @@ class QuickRoute:
             os.environ["DJANGO_SETTINGS_MODULE"] = settings_module
 
         try:
-            from .app import settings
+            from . import settings
 
             self.settings = settings
         except ImportError as e:
@@ -58,24 +58,24 @@ class QuickRoute:
     def _initialize_components(self):
         """Initialize QuickRoute components."""
         try:
-            from .app import load_middleware
+            from . import load_middleware
 
             load_middleware(self.app)
         except ImportError as e:
             console.print(f"[yellow]Warning: Could not load middleware: {e}")
 
         try:
-            from .app import ADMIN_AVAILABLE, setup_admin
+            from . import ADMIN_AVAILABLE, setup_admin
 
             if ADMIN_AVAILABLE:
-                from .app.database import engine
+                from .database import engine
 
                 setup_admin(self.app, engine)
         except ImportError:
             pass  # Admin is optional
 
         try:
-            from .app import WEBSOCKET_AVAILABLE
+            from . import WEBSOCKET_AVAILABLE
 
             if WEBSOCKET_AVAILABLE:
                 from .websocket import get_websocket_manager
@@ -85,7 +85,7 @@ class QuickRoute:
             pass  # WebSocket is optional
 
         try:
-            from .app import PLUGINS_AVAILABLE
+            from . import PLUGINS_AVAILABLE
 
             if PLUGINS_AVAILABLE:
                 from .plugins import initialize_plugins
@@ -95,7 +95,7 @@ class QuickRoute:
             pass  # Plugins are optional
 
         try:
-            from .app import JOBS_AVAILABLE
+            from . import JOBS_AVAILABLE
 
             if JOBS_AVAILABLE:
                 # Jobs are auto-registered when imported
@@ -187,7 +187,7 @@ def get_app() -> FastAPI:
 
 def get_settings():
     """Get the current settings (Django-like)."""
-    from .app import settings
+    from . import settings
 
     return settings
 

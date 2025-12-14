@@ -11,9 +11,9 @@ from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from quickroute.app.main import app
+from quickroute.main import app
 from quickroute import User, create_access_token
-from quickroute.app.settings import TestingSettings
+from quickroute.settings import TestingSettings
 
 
 class QuickRouteTestCase:
@@ -80,7 +80,7 @@ class AsyncQuickRouteTestCase:
         self, email: str = "test@example.com", password: str = "test123", **kwargs
     ) -> User:
         """Create a test user in the database."""
-        from quickroute.app.managers import UserManager
+        from quickroute.managers import UserManager
 
         user_manager = UserManager()
         return await user_manager.create(db=self.db, email=email, password=password, **kwargs)
@@ -101,7 +101,7 @@ class AsyncQuickRouteTestCase:
 
     async def create_multiple_users(self, count: int = 3) -> list[User]:
         """Create multiple test users."""
-        from quickroute.app.managers import UserManager
+        from quickroute.managers import UserManager
 
         user_manager = UserManager()
         users = []
@@ -126,7 +126,7 @@ class WebSocketTestCase(AsyncQuickRouteTestCase):
 
     async def create_websocket_connection(self, user: User = None, token: str = None):
         """Create a mock WebSocket connection for testing."""
-        from quickroute.app.websocket.connection import WebSocketConnection
+        from quickroute.websocket.connection import WebSocketConnection
         from unittest.mock import Mock
 
         mock_websocket = Mock()
@@ -148,7 +148,7 @@ class WebSocketTestCase(AsyncQuickRouteTestCase):
 
     async def create_mock_room(self, name: str = "test_room"):
         """Create a mock WebSocket room for testing."""
-        from quickroute.app.websocket.connection import WebSocketRoom
+        from quickroute.websocket.connection import WebSocketRoom
 
         return WebSocketRoom(name)
 
@@ -165,7 +165,7 @@ class JobTestCase(AsyncQuickRouteTestCase):
 
     async def create_test_job(self, name: str = "test_job"):
         """Create a test job for testing."""
-        from quickroute.app.jobs import Job, JobRegistry
+        from quickroute.jobs import Job, JobRegistry
 
         async def test_job_func():
             return {"status": "completed", "job_name": name}
@@ -179,7 +179,7 @@ class JobTestCase(AsyncQuickRouteTestCase):
 
     async def run_job_test(self, job):
         """Run a job and return the result."""
-        from quickroute.app.jobs import JobScheduler
+        from quickroute.jobs import JobScheduler
 
         scheduler = JobScheduler()
         return await scheduler.run_job_now(job.name)
@@ -192,8 +192,8 @@ class PluginTestCase(AsyncQuickRouteTestCase):
 
     def create_test_plugin(self, name: str = "test_plugin"):
         """Create a test plugin."""
-        from quickroute.app.plugins.base import BasePlugin
-        from quickroute.app.settings import TestingSettings
+        from quickroute.plugins.base import BasePlugin
+        from quickroute.settings import TestingSettings
 
         class TestPlugin(BasePlugin):
             def __init__(self, settings):
@@ -291,14 +291,14 @@ class IntegrationTestCase(AsyncQuickRouteTestCase):
 # Utility functions for testing
 async def create_test_app():
     """Create a test FastAPI application."""
-    from quickroute.app.main import app
+    from quickroute.main import app
 
     return app
 
 
 async def create_test_user(db: AsyncSession, email: str = "test@example.com", **kwargs) -> User:
     """Create a test user."""
-    from quickroute.app.managers import UserManager
+    from quickroute.managers import UserManager
 
     user_manager = UserManager()
     return await user_manager.create(db=db, email=email, **kwargs)

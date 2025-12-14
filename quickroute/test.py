@@ -60,7 +60,7 @@ async def test_db_engine():
         },
     )
 
-    from quickroute.app.database import Base
+    from quickroute.database import Base
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -84,7 +84,7 @@ async def test_db_session(test_db_engine):
 @pytest.fixture(scope="function")
 async def test_client(test_db_session):
     """Create a test client with database session."""
-    from quickroute.app.database import get_async_session
+    from quickroute.database import get_async_session
 
     # Override the database dependency
     async def override_get_db():
@@ -109,8 +109,8 @@ async def test_client(test_db_session):
 @pytest.fixture
 async def test_user(test_db_session):
     """Create a test user."""
-    from quickroute.app.models import User
-    from quickroute.app.auth import get_password_hash
+    from quickroute.models import User
+    from quickroute.auth import get_password_hash
 
     user = User(
         email="test@example.com",
@@ -129,8 +129,8 @@ async def test_user(test_db_session):
 @pytest.fixture
 async def test_superuser(test_db_session):
     """Create a test superuser."""
-    from quickroute.app.models import User
-    from quickroute.app.auth import get_password_hash
+    from quickroute.models import User
+    from quickroute.auth import get_password_hash
 
     user = User(
         email="admin@example.com",
@@ -149,7 +149,7 @@ async def test_superuser(test_db_session):
 @pytest.fixture
 async def access_token(test_user):
     """Create a JWT access token for test user."""
-    from quickroute.app.jwt_utils import create_access_token
+    from quickroute.auth import create_access_token
 
     token_data = create_access_token(test_user.id)
     return token_data["token"]
@@ -158,7 +158,7 @@ async def access_token(test_user):
 @pytest.fixture
 async def superuser_token(test_superuser):
     """Create a JWT access token for test superuser."""
-    from quickroute.app.jwt_utils import create_access_token
+    from quickroute.auth import create_access_token
 
     token_data = create_access_token(test_superuser.id)
     return token_data["token"]
@@ -174,8 +174,8 @@ class QuickRouteTestCase:
 
     async def create_user(self, email: str, password: str, **kwargs):
         """Create a test user."""
-        from quickroute.app.models import User
-        from quickroute.app.auth import get_password_hash
+        from quickroute.models import User
+        from quickroute.auth import get_password_hash
 
         user = User(email=email, hashed_password=get_password_hash(password), **kwargs)
 

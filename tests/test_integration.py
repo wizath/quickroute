@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from quickroute import QuickRoute, User, create_access_token, verify_password
-from quickroute.app.database import Base, get_async_session
+from quickroute.database import Base, get_async_session
 
 
 @pytest.mark.integration
@@ -97,7 +97,7 @@ class TestDatabaseIntegration:
 
         async with SessionLocal() as session:
             # Create user
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             user = User(
                 email="test@example.com",
@@ -171,7 +171,7 @@ class TestAPIIntegration:
 
         # Create test user
         async with SessionLocal() as session:
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             user = User(
                 email="testuser@example.com",
@@ -224,7 +224,7 @@ class TestAPIIntegration:
     async def test_protected_endpoint(self):
         """Test protected endpoint with JWT."""
         from fastapi import Depends, Header, HTTPException
-        from quickroute.app.jwt_utils import decode_token
+        from quickroute.auth import decode_token
         from sqlalchemy import select
         from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -246,7 +246,7 @@ class TestAPIIntegration:
 
         # Create user
         async with SessionLocal() as session:
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             user = User(
                 email="protected@example.com",
@@ -332,7 +332,7 @@ class TestAuthenticationIntegration:
 
         async with SessionLocal() as session:
             # Test user creation with manager
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             # Create user
             user = User(
@@ -380,7 +380,7 @@ class TestModelManagerIntegration:
 
         async with SessionLocal() as session:
             # Create multiple users
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             for i in range(5):
                 user = User(
@@ -424,7 +424,7 @@ class TestFullApplicationFlow:
         from fastapi import Depends, HTTPException, Header
         from sqlalchemy import select, text
         from sqlalchemy.ext.asyncio import AsyncSession
-        from quickroute.app.jwt_utils import decode_token
+        from quickroute.auth import decode_token
 
         app = QuickRoute(title="Blog API")
 
@@ -468,7 +468,7 @@ class TestFullApplicationFlow:
                 raise HTTPException(400, "User exists")
 
             # Create user
-            from quickroute.app.auth import get_password_hash
+            from quickroute.auth import get_password_hash
 
             user = User(email=email, hashed_password=get_password_hash(password), is_active=True)
             db.add(user)

@@ -4,7 +4,7 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
-from quickroute.app.settings import settings
+from quickroute.settings import settings
 
 
 def create_access_token(user_id: int) -> dict:

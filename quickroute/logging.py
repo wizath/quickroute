@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from quickroute.app.settings import settings
+from quickroute.settings import settings
 
 
 def setup_logging():
