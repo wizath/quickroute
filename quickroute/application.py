@@ -25,6 +25,7 @@ class QuickRoute:
         description: str = "async web framework",
         version: str = "1.0.0",
         settings_module: Optional[str] = None,
+        root_path: str = "",
     ):
         """
         Initialize QuickRoute application.
@@ -51,7 +52,7 @@ class QuickRoute:
             console.print(f"[red]Error importing settings: {e}")
             raise
 
-        self.app = FastAPI(title=title, description=description, version=version)
+        self.app = FastAPI(title=title, description=description, version=version, root_path=root_path)
 
         self._initialize_components()
 
