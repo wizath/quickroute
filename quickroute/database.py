@@ -1,12 +1,53 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from .settings import settings
 
-# Async engine with debug echo from settings
-engine = create_async_engine(settings.DATABASE_URL, future=True, echo=settings.DEBUG)
+# Lazy engine initialization
+_engine = None
+_AsyncSessionLocal = None
 
-# Async session factory
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+def get_database_url():
+    """Get database URL from environment."""
+    return os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./db.sqlite")
+
+
+def get_engine():
+    """Get or create async engine."""
+    global _engine
+    if _engine is None:
+        debug = os.getenv("DEBUG", "False").lower() == "true"
+        _engine = create_async_engine(get_database_url(), future=True, echo=debug)
+    return _engine
+
+
+def get_session_factory():
+    """Get or create async session factory."""
+    global _AsyncSessionLocal
+    if _AsyncSessionLocal is None:
+        _AsyncSessionLocal = async_sessionmaker(get_engine(), expire_on_commit=False)
+    return _AsyncSessionLocal
+
+
+# Backwards compatible properties
+class _EngineProxy:
+    def __getattr__(self, name):
+        return getattr(get_engine(), name)
+
+    def begin(self):
+        return get_engine().begin()
+
+
+class _SessionProxy:
+    def __call__(self):
+        return get_session_factory()()
+
+    def __getattr__(self, name):
+        return getattr(get_session_factory(), name)
+
+
+engine = _EngineProxy()
+AsyncSessionLocal = _SessionProxy()
 
 
 # Base class for models
@@ -21,7 +62,7 @@ async def get_async_session():
     Returns:
         AsyncSession: Database session
     """
-    async with AsyncSessionLocal() as session:
+    async with get_session_factory()() as session:
         try:
             yield session
         finally:
@@ -35,4 +76,4 @@ def get_db_session():
     Returns:
         AsyncSessionLocal: Database session factory
     """
-    return AsyncSessionLocal
+    return get_session_factory()

@@ -20,7 +20,7 @@ class Router:
         self.prefix = prefix
         self.tags = tags or []
         # FastAPI requires prefix to start with '/' if provided
-        fastapi_prefix = prefix if not prefix else ""
+        fastapi_prefix = prefix
         if fastapi_prefix and not fastapi_prefix.startswith("/"):
             fastapi_prefix = "/" + fastapi_prefix
         self.router = APIRouter(prefix=fastapi_prefix, tags=tags)
